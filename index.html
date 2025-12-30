@@ -3,41 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - MyBrain</title>
+    <title>MyBrain Dashboard</title>
     
     <!-- CSS লিংক -->
     <link rel="stylesheet" href="css/global.css">
-    <link rel="stylesheet" href="css/style-login.css">
+    <link rel="stylesheet" href="css/style-dash.css">
     <link rel="stylesheet" href="css/footer.css">
     
 </head>
 <body>
 
-    <div class="login-wrapper">
-        <div class="login-card">
-            <div class="logo-area">
-                <!-- লোগো না থাকলে টেক্সট দেখাবে -->
-                <img src="assets/logo.png" alt="MyBrain Logo" onerror="this.style.display='none'">
-                <h1>MyBrain</h1>
-                <p>Your Digital Second Brain</p>
-            </div>
-
-            <button id="google-login-btn" class="btn btn-google">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
-                Sign in with Google
-            </button>
-            
-            <p class="login-note">Private. Secure. Yours.</p>
+<!-- ন্যাভিগেশন বার -->
+<nav class="navbar">
+    <div class="logo-section">
+        <span class="logo-icon">🧠</span>
+        <span class="logo-text">MyBrain</span>
+    </div>
+    
+    <div class="nav-right">
+        <div class="nav-links">
+            <a href="#" class="nav-item active">Notes</a>
+            <a href="vault.html" class="nav-item">Vault</a>
         </div>
+        <button id="logout-btn" class="btn-logout">
+            <img src="https://img.icons8.com/ios-glyphs/30/fa314a/exit.png" alt="Logout" style="width:16px; margin-right:5px;">
+            Logout
+        </button>
+    </div>
+</nav>
+
+    <div class="container">
+        <!-- প্রোফাইল সেকশন (JS দিয়ে লোড হবে) -->
+        <div id="profile-widget-area"></div>
+        
+        <!-- ১. সার্চ বার -->
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" placeholder="🔍 Search notes, links or ideas...">
+        </div>
+
+        <!-- ২. ইনপুট এরিয়া (লিংক এখানে আসবে) -->
+        <div class="input-area">
+            <textarea id="noteInput" placeholder="Save a note, link or idea..."></textarea>
+            
+            <div class="input-actions">
+                <input type="file" id="fileInput" hidden>
+                
+                <button id="saveBtn" class="btn btn-primary">Save to Brain</button>
+            </div>
+            <p id="uploadStatus" style="display:none; color: green; font-size: 12px; margin-top:5px;">Uploading...</p>
+        </div>
+
+        <!-- ৩. নোটস কন্টেন্ট এরিয়া -->
+        <div id="content-grid" class="masonry-grid">
+            <p style="text-align:center; color:#999; width:100%;">Loading your brain...</p>
+        </div>
+
     </div>
 
-    <!-- ফুটার বসানোর জায়গা -->
+    <!-- ফুটার -->
     <div id="app-footer"></div>
 
-    <!-- স্ক্রিপ্ট -->
+    <!-- প্রয়োজনীয় স্ক্রিপ্টস -->
     <script type="module" src="js/firebase-config.js"></script>
-    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
+    <script type="module" src="js/profile-manager.js"></script>
+    <script src="js/search.js"></script> 
     <script src="js/footer.js"></script>
+
+    <!-- [গুরুত্বপূর্ণ] শেয়ার করা লিংক হ্যান্ডেল করার স্ক্রিপ্ট -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const noteInput = document.getElementById('noteInput');
+            
+            // ইনপুট বক্স না পেলে কোড থামিয়ে দেবে
+            if (!noteInput) return;
+
+            // ১. সরাসরি URL থেকে চেক করা (যদি ইউজার অলরেডি লগইন থাকে)
+            // অ্যান্ড্রয়েড অ্যাপ পাঠাবে: ?note=https://...
+            const urlParams = new URLSearchParams(window.location.search);
+            let sharedNote = urlParams.get('note');
+
+            // ২. যদি URL এ না থাকে, তাহলে SessionStorage চেক করা 
+            // (যদি ইউজার লগইন পেজ হয়ে আসে)
+            if (!sharedNote) {
+                sharedNote = sessionStorage.getItem('pendingNote');
+                
+                // একবার নেওয়ার পর মেমোরি ক্লিয়ার করে দেব, যাতে রিফ্রেশ করলে আবার না আসে
+                if (sharedNote) {
+                    sessionStorage.removeItem('pendingNote');
+                }
+            }
+
+            // ৩. লিংক পাওয়া গেলে ইনপুট বক্সে বসানো
+            if (sharedNote) {
+                noteInput.value = sharedNote; // লিংক বসালাম
+                noteInput.focus();            // কার্সর ইনপুটে নিয়ে গেলাম
+                
+                // আপনি চাইলে অটোমেটিক সেভ করতে পারেন, নিচের লাইনটি আন-কমেন্ট করে:
+                // document.getElementById('saveBtn').click();
+            }
+        });
+    </script>
 
 </body>
 </html>
