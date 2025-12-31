@@ -1,7 +1,7 @@
 // js/profile-manager.js
 
 import { auth } from './firebase-config.js';
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const profileContainer = document.getElementById('profile-widget-area');
 let clockInterval = null; // টাইমার ভেরিয়েবল

@@ -3,92 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - MyBrain</title>
+    <title>Loading...</title>
     
-    <!-- CSS শুধু লগইনের জন্য -->
+    <!-- স্টাইল লিংক -->
     <link rel="stylesheet" href="css/global.css">
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f4f6f8;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        .login-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-        }
-        .logo { font-size: 3rem; margin-bottom: 1rem; }
-        h1 { margin-bottom: 0.5rem; color: #333; }
-        p { color: #666; margin-bottom: 2rem; }
-        
-        .google-btn {
-            background: #4285F4;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            transition: background 0.3s;
-        }
-        .google-btn:hover { background: #357ae8; }
-    </style>
 </head>
 <body>
 
-    <div class="login-card">
-        <div class="logo">🧠</div>
-        <h1>MyBrain</h1>
-        <p>Your second brain for notes & ideas.</p>
-
-        <button id="google-login-btn" class="google-btn">
-            <img src="https://img.icons8.com/color/48/ffffff/google-logo.png" style="width:24px;">
-            Sign in with Google
-        </button>
+    <!-- শুধু একটি লোডার থাকবে -->
+    <div class="loader-container">
+        <div class="loader"></div>
     </div>
-    <!-- [নতুন সংযোজন] অ্যাপ থেকে শেয়ার করা লিংক রিসিভ করার স্ক্রিপ্ট -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // URL থেকে প্যারামিটার খোঁজা
-            const urlParams = new URLSearchParams(window.location.search);
-            const sharedNote = urlParams.get('note'); // 'note' নামটি এন্ড্রয়েড কোডের সাথে মিল থাকতে হবে
 
-            // যদি কোনো লিংক পাওয়া যায়
-            if (sharedNote) {
-                const noteInput = document.getElementById('noteInput');
-                if (noteInput) {
-                    // 1. ইনপুট বক্সে লিংকটি বসিয়ে দেওয়া
-                    noteInput.value = sharedNote;
-                    
-                    // 2. ফোকাস করা যাতে ইউজার দেখতে পায়
-                    noteInput.focus();
-
-                    // তুমি যদি চাও লিংকটি অটোমেটিক সেভ হয়ে যাক (বাটনে ক্লিক ছাড়া),
-                    // তাহলে নিচের ২ লাইনের কমেন্ট তুলে দাও:
-                    /*
-                    const saveBtn = document.getElementById('saveBtn');
-                    if(saveBtn) saveBtn.click();
-                    */
-                }
-            }
-        });
-    </script>
-    <!-- শুধুমাত্র auth.js থাকবে -->
-    <script type="module" src="js/firebase-config.js"></script>
-    <script type="module" src="js/auth.js"></script>
+    <!-- লজিক স্ক্রিপ্ট -->
+    <script type="module" src="js/entry.js"></script>
 
 </body>
 </html>

@@ -1,16 +1,14 @@
-// js/vault.js
+// ১. কনফিগারেশন ইমপোর্ট (firebase-config.js থেকে)
+import { db, auth } from './firebase-config.js';
 
-// ১. কনফিগারেশন ইমপোর্ট
-import { app, db, auth } from './firebase-config.js';
-
-// ২. ফায়ারবেস ফাংশন ইমপোর্ট
+// ২. ফায়ারবেস ফাংশন ইমপোর্ট (ভার্সন 10.7.1 ব্যবহার করা হয়েছে)
 import { 
-    collection, addDoc, onSnapshot, query, where, orderBy, deleteDoc, doc 
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+    collection, addDoc, onSnapshot, query, where, orderBy, deleteDoc, doc, serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { 
     onAuthStateChanged, signOut 
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 
 // DOM Elements
@@ -23,6 +21,7 @@ const togglePassBtn = document.getElementById('togglePass');
 const statusMsg = document.getElementById('vaultStatus');
 const csvInput = document.getElementById('csvInput'); 
 const exportBtn = document.getElementById('exportBtn'); 
+const logoutBtn = document.getElementById('logout-btn'); // আইডি চেক করে নিও
 
 let currentUser = null;
 let allSecrets = [];
@@ -34,19 +33,22 @@ onAuthStateChanged(auth, (user) => {
         console.log("Vault User:", user.email);
         loadSecrets(user.uid);
     } else {
+        // লগইন না থাকলে লগইন পেজে পাঠাও
         window.location.href = "index.html";
     }
 });
 
 // ৪. পাসওয়ার্ড সেভ লজিক
-saveBtn.addEventListener('click', async () => {
-    await saveSingleSecret(siteInput.value, userInput.value, passInput.value);
-    
-    // ফর্ম ক্লিয়ার
-    siteInput.value = ""; 
-    userInput.value = ""; 
-    passInput.value = "";
-});
+if(saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+        await saveSingleSecret(siteInput.value, userInput.value, passInput.value);
+        
+        // ফর্ম ক্লিয়ার
+        siteInput.value = ""; 
+        userInput.value = ""; 
+        passInput.value = "";
+    });
+}
 
 // সিঙ্গেল পাসওয়ার্ড সেভ করার ফাংশন
 async function saveSingleSecret(site, username, password) {
@@ -60,7 +62,7 @@ async function saveSingleSecret(site, username, password) {
         statusMsg.style.color = "blue";
         statusMsg.textContent = "Encrypting & Saving...";
         
-        // এনক্রিপশন (তালা মারা)
+        // এনক্রিপশন (তালা মারা) - CryptoJS লাইব্রেরি HTML এ থাকতে হবে
         const encryptedPassword = CryptoJS.AES.encrypt(password, currentUser.uid).toString();
 
         // ফায়ারবেসে পাঠানো
@@ -69,7 +71,7 @@ async function saveSingleSecret(site, username, password) {
             site: site,
             username: username || "",
             password: encryptedPassword,
-            createdAt: new Date()
+            createdAt: serverTimestamp() // ফায়ারবেস সার্ভার টাইম
         });
 
         statusMsg.style.color = "green";
@@ -94,6 +96,7 @@ if(csvInput) {
         statusMsg.style.display = 'block';
         statusMsg.textContent = "Reading CSV...";
 
+        // PapaParse লাইব্রেরি HTML এ থাকতে হবে
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
@@ -104,9 +107,10 @@ if(csvInput) {
                 statusMsg.textContent = `Importing ${rows.length} items...`;
 
                 for (let row of rows) {
-                    const site = row.name || row.login_uri || "Unknown Site";
-                    const username = row.login_username || "";
-                    const password = row.login_password;
+                    // CSV এর কলাম নামগুলো চেক করবে
+                    const site = row.name || row.login_uri || row.Title || "Unknown Site";
+                    const username = row.login_username || row.Username || "";
+                    const password = row.login_password || row.Password;
 
                     if (password) {
                         await saveSingleSecret(site, username, password);
@@ -158,7 +162,7 @@ if(exportBtn) {
     });
 }
 
-// ৭. ডাটা লোড করা এবং দেখানো (আপডেট করা হয়েছে)
+// ৭. ডাটা লোড করা এবং দেখানো
 function loadSecrets(userId) {
     const q = query(
         collection(db, "vault"), 
@@ -182,7 +186,7 @@ function loadSecrets(userId) {
             const card = document.createElement('div');
             card.className = 'secret-card';
             
-            // ইউজারনেম আছে কিনা চেক করা (যাতে বাটন দেখানো যায়)
+            // ইউজারনেম আছে কিনা চেক করা
             const hasUser = data.username && data.username.trim() !== "";
 
             card.innerHTML = `
@@ -214,16 +218,16 @@ function loadSecrets(userId) {
 
 // ৮. গ্লোবাল ফাংশন সমূহ (HTML থেকে এক্সেস করার জন্য Window তে অ্যাসাইন করা)
 
-// ইউজারনেম কপি করার ফাংশন (নতুন)
+// ইউজারনেম কপি করার ফাংশন
 window.copyUsername = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-        // কপি হলে ইউজার কনফিডেন্সের জন্য ছোট অ্যালার্ট
         alert("Username copied: " + text);
     }).catch(err => {
         console.error('Failed to copy: ', err);
     });
 };
 
+// পাসওয়ার্ড রিভিল (দেখানো) ফাংশন
 window.revealPass = (id, encryptedPass) => {
     const passField = document.getElementById(`pass-text-${id}`);
     if (passField.textContent !== "••••••••") {
@@ -237,6 +241,7 @@ window.revealPass = (id, encryptedPass) => {
     } catch (e) { alert("Decrypt Error"); }
 };
 
+// পাসওয়ার্ড কপি ফাংশন
 window.copyPass = (id, encryptedPass) => {
     try {
         const bytes = CryptoJS.AES.decrypt(encryptedPass, currentUser.uid);
@@ -246,18 +251,27 @@ window.copyPass = (id, encryptedPass) => {
     } catch (e) { alert("Copy Failed"); }
 };
 
+// ডিলিট ফাংশন
 window.deleteSecret = async (id) => {
     if(confirm("Are you sure you want to delete this?")) {
-        await deleteDoc(doc(db, "vault", id));
+        try {
+            await deleteDoc(doc(db, "vault", id));
+        } catch (error) {
+            console.error("Delete Error", error);
+        }
     }
 };
 
 // পাসওয়ার্ড ইনপুট টগল
-togglePassBtn.addEventListener('click', () => {
-    passInput.type = passInput.type === "password" ? "text" : "password";
-});
+if(togglePassBtn) {
+    togglePassBtn.addEventListener('click', () => {
+        passInput.type = passInput.type === "password" ? "text" : "password";
+    });
+}
 
 // লগআউট
-document.getElementById('logout-btn').addEventListener('click', () => {
-    signOut(auth).then(() => window.location.href = "index.html");
-});
+if(logoutBtn){
+    logoutBtn.addEventListener('click', () => {
+        signOut(auth).then(() => window.location.href = "index.html");
+    });
+}

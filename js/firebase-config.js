@@ -1,12 +1,30 @@
 // js/firebase-config.js
 
-// আপনার অনুরোধ অনুযায়ী 12.7.0 ভার্সন ব্যবহার করা হয়েছে
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
+// ১. ইম্পোর্ট সেকশন (সব প্রয়োজনীয় টুলস এখানে আনা হয়েছে)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    signInWithRedirect, 
+    onAuthStateChanged, 
+    signOut 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Your web app's Firebase configuration
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    getDocs,
+    doc,
+    deleteDoc,
+    query,
+    where
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+// ২. কনফিগারেশন (আপনার দেওয়া কি-গুলো ঠিক রাখা হয়েছে)
 const firebaseConfig = {
   apiKey: "AIzaSyDnXqLbGRyaOqP58edPaS5uut1dxDyDSQU",
   authDomain: "mybrain-1df31.firebaseapp.com",
@@ -17,13 +35,29 @@ const firebaseConfig = {
   measurementId: "G-JS89ND0VJR"
 };
 
-// Initialize Firebase
+// ৩. ইনিশিয়ালাইজেশন
 const app = initializeApp(firebaseConfig);
-
-// Initialize Services
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const provider = new GoogleAuthProvider(); // লগইনের জন্য প্রোভাইডার সেটআপ
 
-// ⚠️ FIXED: এখানে 'app' এক্সপোর্ট করা হয়েছে, যা আগে মিসিং ছিল
-export { app, auth, db, storage };
+// ৪. এক্সপোর্ট (খুবই গুরুত্বপূর্ণ: সব ফাংশন এখান থেকে এক্সপোর্ট করতে হবে)
+export { 
+    app, 
+    auth, 
+    db, 
+    storage, 
+    provider, 
+    signInWithPopup, 
+    signInWithRedirect, 
+    onAuthStateChanged, 
+    signOut,
+    collection, 
+    addDoc, 
+    getDocs,
+    doc,
+    deleteDoc,
+    query,
+    where
+};
