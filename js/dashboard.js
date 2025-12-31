@@ -10,12 +10,10 @@ let unsubscribeNotes = null; // ডাটা লিসেনার কন্ট�
 // ১. অথেনটিকেশন চেক
 onAuthStateChanged(auth, (user) => {
     if (!user) {
-        // লগআউট হলে স্ন্যাপশট বন্ধ করো যাতে এরর না আসে
         if (unsubscribeNotes) {
             unsubscribeNotes();
             unsubscribeNotes = null;
         }
-        // ইউজার না থাকলে লগইন পেজে পাঠাও
         window.location.href = "index.html";
     } else {
         loadUserNotes(user.uid);
@@ -26,7 +24,6 @@ onAuthStateChanged(auth, (user) => {
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-        // এখানে শুধু সাইন আউট কল করুন, রিডাইরেক্ট onAuthStateChanged করবে
         signOut(auth).catch((error) => console.error("Logout Error:", error));
     });
 }
@@ -69,7 +66,7 @@ if (saveBtn) {
                 text: text,
                 fileUrl: fileUrl,
                 type: type,
-                timestamp: serverTimestamp()
+                timestamp: serverTimestamp() // সার্ভারের সময় সেভ হচ্ছে
             });
 
             noteInput.value = "";
@@ -95,12 +92,25 @@ function isValidURL(string) {
     }
 }
 
-// ৪. ডাটা লোড (Search এর জন্য ক্লাস আপডেট করা হয়েছে)
+// [নতুন] সময় ফরম্যাট করার ফাংশন
+function formatFirestoreTimestamp(timestamp) {
+    if (!timestamp) return "Just now"; // লোড হওয়ার সাথে সাথে অনেক সময় টাইমস্ট্যাম্প নাল থাকে
+    const date = timestamp.toDate(); 
+    return date.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric', 
+        hour: 'numeric', 
+        minute: 'numeric', 
+        hour12: true 
+    });
+}
+
+// ৪. ডাটা লোড
 function loadUserNotes(uid) {
     const q = query(collection(db, "notes"), where("uid", "==", uid), orderBy("timestamp", "desc"));
     const grid = document.getElementById('content-grid');
 
-    // আগের লিসেনার থাকলে বন্ধ করো
     if (unsubscribeNotes) unsubscribeNotes();
 
     unsubscribeNotes = onSnapshot(q, (snapshot) => {
@@ -109,14 +119,18 @@ function loadUserNotes(uid) {
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
             const id = docSnap.id;
+            
+            // [নতুন] সময় ফরম্যাট করা হচ্ছে
+            const dateString = formatFirestoreTimestamp(data.timestamp);
+
             const card = document.createElement('div');
-            card.className = 'card brain-card'; // brain-card ক্লাস যোগ করা হলো সার্চের সুবিধার্থে
+            card.className = 'card brain-card'; 
             
             let contentHTML = '';
 
+            // ---- Content Logic ----
             if (data.type === 'image') {
                 contentHTML += `<img src="${data.fileUrl}" alt="Image">`;
-                // [FIX] note-text ক্লাস যোগ করা হলো যাতে search.js এটা খুঁজে পায়
                 if(data.text) contentHTML += `<p class="note-text">${data.text}</p>`;
             }
             else if (data.type === 'link') {
@@ -129,14 +143,20 @@ function loadUserNotes(uid) {
                 fetchLinkPreview(data.text, previewId);
             } 
             else {
-                // [FIX] note-text ক্লাস যোগ করা হলো
                 if(data.text) contentHTML += `<p class="note-text">${data.text}</p>`;
                 if (data.type === 'file') {
                     contentHTML += `<br><a href="${data.fileUrl}" target="_blank" class="file-btn">⬇ Download File</a>`;
                 }
             }
 
-            contentHTML += `<div class="card-footer"><button class="delete-btn" onclick="deleteNote('${id}')">🗑</button></div>`;
+            // ---- Footer with Date & Delete ----
+            // এখানে স্টাইল দিয়ে দিয়েছি যাতে বাম দিকে তারিখ আর ডান দিকে ডিলিট বাটন থাকে
+            contentHTML += `
+                <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                    <small style="color: #888; font-size: 11px;">📅 ${dateString}</small>
+                    <button class="delete-btn" onclick="deleteNote('${id}')">🗑</button>
+                </div>
+            `;
 
             card.innerHTML = contentHTML;
             grid.appendChild(card);
@@ -154,7 +174,6 @@ async function fetchLinkPreview(url, elementId) {
         const el = document.getElementById(elementId);
 
         if (el && result.status === 'success') {
-            // preview-title এবং preview-desc ক্লাস search.js ব্যবহার করে
             el.innerHTML = `
                 <a href="${url}" target="_blank" class="preview-card-link">
                     ${data.image ? `<div class="preview-img" style="background-image: url('${data.image.url}')"></div>` : ''}
