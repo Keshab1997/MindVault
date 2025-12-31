@@ -5,20 +5,29 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { collection, addDoc, query, where, onSnapshot, serverTimestamp, deleteDoc, doc, orderBy } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
 
+let unsubscribeNotes = null; // ডাটা লিসেনার কন্ট্রোল করার ভেরিয়েবল
+
 // ১. অথেনটিকেশন চেক
 onAuthStateChanged(auth, (user) => {
     if (!user) {
+        // লগআউট হলে স্ন্যাপশট বন্ধ করো যাতে এরর না আসে
+        if (unsubscribeNotes) {
+            unsubscribeNotes();
+            unsubscribeNotes = null;
+        }
+        // ইউজার না থাকলে লগইন পেজে পাঠাও
         window.location.href = "index.html";
     } else {
         loadUserNotes(user.uid);
     }
 });
 
-// ২. লগআউট
+// ২. লগআউট বাটন
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-        signOut(auth).then(() => window.location.href = "index.html");
+        // এখানে শুধু সাইন আউট কল করুন, রিডাইরেক্ট onAuthStateChanged করবে
+        signOut(auth).catch((error) => console.error("Logout Error:", error));
     });
 }
 
@@ -51,7 +60,6 @@ if (saveBtn) {
                 fileType = file.type.startsWith('image/') ? 'image' : 'file';
             }
 
-            // লিংকের জন্য টাইপ ডিটেকশন
             let type = 'text';
             if (fileUrl) type = fileType;
             else if (isValidURL(text)) type = 'link';
@@ -78,7 +86,6 @@ if (saveBtn) {
     });
 }
 
-// URL চেক করার ফাংশন
 function isValidURL(string) {
     try {
         new URL(string);
@@ -88,48 +95,47 @@ function isValidURL(string) {
     }
 }
 
-// ৪. ডাটা লোড এবং প্রিভিউ জেনারেট
+// ৪. ডাটা লোড (Search এর জন্য ক্লাস আপডেট করা হয়েছে)
 function loadUserNotes(uid) {
     const q = query(collection(db, "notes"), where("uid", "==", uid), orderBy("timestamp", "desc"));
     const grid = document.getElementById('content-grid');
 
-    onSnapshot(q, (snapshot) => {
+    // আগের লিসেনার থাকলে বন্ধ করো
+    if (unsubscribeNotes) unsubscribeNotes();
+
+    unsubscribeNotes = onSnapshot(q, (snapshot) => {
         grid.innerHTML = ""; 
         
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
             const id = docSnap.id;
             const card = document.createElement('div');
-            card.className = 'card';
+            card.className = 'card brain-card'; // brain-card ক্লাস যোগ করা হলো সার্চের সুবিধার্থে
             
             let contentHTML = '';
 
-            // ---- IMAGE ----
             if (data.type === 'image') {
                 contentHTML += `<img src="${data.fileUrl}" alt="Image">`;
-                if(data.text) contentHTML += `<p>${data.text}</p>`;
+                // [FIX] note-text ক্লাস যোগ করা হলো যাতে search.js এটা খুঁজে পায়
+                if(data.text) contentHTML += `<p class="note-text">${data.text}</p>`;
             }
-            // ---- LINK (Advanced Preview) ----
             else if (data.type === 'link') {
                 const previewId = `preview-${id}`;
-                // প্রথমে লোডিং বা সাধারণ লিংক দেখাবো
                 contentHTML += `
                     <div id="${previewId}" class="link-preview-box">
-                        <a href="${data.text}" target="_blank" class="raw-link">🔗 Loading preview...</a>
+                        <a href="${data.text}" target="_blank" class="raw-link note-text">🔗 ${data.text}</a>
                     </div>
                 `;
-                // ব্যাকগ্রাউন্ডে প্রিভিউ ফেচ করবো
                 fetchLinkPreview(data.text, previewId);
             } 
-            // ---- TEXT / FILE ----
             else {
-                if(data.text) contentHTML += `<p>${data.text}</p>`;
+                // [FIX] note-text ক্লাস যোগ করা হলো
+                if(data.text) contentHTML += `<p class="note-text">${data.text}</p>`;
                 if (data.type === 'file') {
                     contentHTML += `<br><a href="${data.fileUrl}" target="_blank" class="file-btn">⬇ Download File</a>`;
                 }
             }
 
-            // Delete Button
             contentHTML += `<div class="card-footer"><button class="delete-btn" onclick="deleteNote('${id}')">🗑</button></div>`;
 
             card.innerHTML = contentHTML;
@@ -138,10 +144,9 @@ function loadUserNotes(uid) {
     });
 }
 
-// ৫. লিংক প্রিভিউ নিয়ে আসার ম্যাজিক ফাংশন (API)
+// ৫. লিংক প্রিভিউ
 async function fetchLinkPreview(url, elementId) {
     try {
-        // Microlink API কল করা হচ্ছে
         const response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`);
         const result = await response.json();
         
@@ -149,6 +154,7 @@ async function fetchLinkPreview(url, elementId) {
         const el = document.getElementById(elementId);
 
         if (el && result.status === 'success') {
+            // preview-title এবং preview-desc ক্লাস search.js ব্যবহার করে
             el.innerHTML = `
                 <a href="${url}" target="_blank" class="preview-card-link">
                     ${data.image ? `<div class="preview-img" style="background-image: url('${data.image.url}')"></div>` : ''}
@@ -159,10 +165,6 @@ async function fetchLinkPreview(url, elementId) {
                     </div>
                 </a>
             `;
-        } else {
-            // যদি প্রিভিউ না পায়, সাধারণ লিংক রেখে দাও
-            const el = document.getElementById(elementId);
-            if(el) el.innerHTML = `<a href="${url}" target="_blank" class="raw-link">🔗 ${url}</a>`;
         }
     } catch (error) {
         console.error("Preview failed", error);

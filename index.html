@@ -3,105 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mybrain Dashboard</title>
+    <title>Login - MyBrain</title>
     
-    <!-- CSS লিংক -->
+    <!-- CSS শুধু লগইনের জন্য -->
     <link rel="stylesheet" href="css/global.css">
-    <link rel="stylesheet" href="css/style-dash.css">
-    <link rel="stylesheet" href="css/footer.css">
-    
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f6f8;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .login-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        .logo { font-size: 3rem; margin-bottom: 1rem; }
+        h1 { margin-bottom: 0.5rem; color: #333; }
+        p { color: #666; margin-bottom: 2rem; }
+        
+        .google-btn {
+            background: #4285F4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        .google-btn:hover { background: #357ae8; }
+    </style>
 </head>
 <body>
 
-<!-- ন্যাভিগেশন বার -->
-<nav class="navbar">
-    <div class="logo-section">
-        <span class="logo-icon">🧠</span>
-        <span class="logo-text">MyBrain</span>
-    </div>
-    
-    <div class="nav-right">
-        <div class="nav-links">
-            <a href="#" class="nav-item active">Notes</a>
-            <a href="vault.html" class="nav-item">Vault</a>
-        </div>
-        <button id="logout-btn" class="btn-logout">
-            <img src="https://img.icons8.com/ios-glyphs/30/fa314a/exit.png" alt="Logout" style="width:16px; margin-right:5px;">
-            Logout
+    <div class="login-card">
+        <div class="logo">🧠</div>
+        <h1>MyBrain</h1>
+        <p>Your second brain for notes & ideas.</p>
+
+        <button id="google-login-btn" class="google-btn">
+            <img src="https://img.icons8.com/color/48/ffffff/google-logo.png" style="width:24px;">
+            Sign in with Google
         </button>
     </div>
-</nav>
 
-    <div class="container">
-        <!-- প্রোফাইল সেকশন (JS দিয়ে লোড হবে) -->
-        <div id="profile-widget-area"></div>
-        
-        <!-- ১. সার্চ বার -->
-        <div class="search-wrapper">
-            <input type="text" id="searchInput" placeholder="🔍 Search notes, links or ideas...">
-        </div>
-
-        <!-- ২. ইনপুট এরিয়া (লিংক এখানে আসবে) -->
-        <div class="input-area">
-            <textarea id="noteInput" placeholder="Save a note, link or idea..."></textarea>
-            
-            <div class="input-actions">
-                <input type="file" id="fileInput" hidden>
-                
-                <button id="saveBtn" class="btn btn-primary">Save to Brain</button>
-            </div>
-            <p id="uploadStatus" style="display:none; color: green; font-size: 12px; margin-top:5px;">Uploading...</p>
-        </div>
-
-        <!-- ৩. নোটস কন্টেন্ট এরিয়া -->
-        <div id="content-grid" class="masonry-grid">
-            <p style="text-align:center; color:#999; width:100%;">Loading your brain...</p>
-        </div>
-
-    </div>
-
-    <!-- ফুটার -->
-    <div id="app-footer"></div>
-
-    <!-- প্রয়োজনীয় স্ক্রিপ্টস -->
+    <!-- শুধুমাত্র auth.js থাকবে -->
     <script type="module" src="js/firebase-config.js"></script>
-    <script type="module" src="js/dashboard.js"></script>
-    <script type="module" src="js/profile-manager.js"></script>
-    <script src="js/search.js"></script> 
-    <script src="js/footer.js"></script>
-
-        <!-- শেয়ার করা লিংক হ্যান্ডেল করার স্ক্রিপ্ট (আপডেটেড) -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const noteInput = document.getElementById('noteInput');
-            if (!noteInput) return;
-
-            // ১. URL থেকে লিংক নেওয়া
-            const urlParams = new URLSearchParams(window.location.search);
-            let sharedNote = urlParams.get('note');
-
-            // ২. SessionStorage থেকে নেওয়া
-            if (!sharedNote) {
-                sharedNote = sessionStorage.getItem('pendingNote');
-                if (sharedNote) sessionStorage.removeItem('pendingNote');
-            }
-
-            // ৩. লিংক পাওয়া গেলে ইনপুট বক্সে বসানো এবং ইভেন্ট ট্রিগার করা
-            if (sharedNote) {
-                noteInput.value = sharedNote; 
-                noteInput.focus(); 
-                
-                // [এই লাইনটি নতুন] 
-                // এটি সিস্টেমকে জানাবে যে ইনপুট বক্সে কিছু লেখা হয়েছে, 
-                // যাতে তোমার থাম্বনেইল জেনারেটর কাজ শুরু করে।
-                noteInput.dispatchEvent(new Event('input', { bubbles: true }));
-                noteInput.dispatchEvent(new Event('change', { bubbles: true }));
-
-                // তুমি চাইলে অটো সেভ বাটন ক্লিক করাতে পারো (যদি সব ঠিক থাকে)
-                //setTimeout(() => document.getElementById('saveBtn').click(), 1000);
-            }
-        });
-    </script>
+    <script type="module" src="js/auth.js"></script>
 
 </body>
 </html>
