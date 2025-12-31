@@ -5,24 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - MyBrain</title>
     
-    <!-- গ্লোবাল স্টাইল -->
+    <!-- গুগল ফন্ট (প্রিমিয়াম লুকের জন্য) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- স্টাইল ফাইল -->
     <link rel="stylesheet" href="css/global.css">
-    <!-- লগইন পেজের স্পেশাল স্টাইল -->
     <link rel="stylesheet" href="css/style-login.css">
 </head>
 <body>
 
-    <div class="login-card">
-        <h1>MyBrain</h1>
-        <p>Login to continue</p>
-        
-        <button id="google-login-btn" class="google-btn">
-            <img src="https://img.icons8.com/color/48/ffffff/google-logo.png" style="width:24px;" alt="G">
-            Sign in with Google
-        </button>
+        <!-- ব্যাকগ্রাউন্ড অ্যানিমেশন (পুরো স্ক্রিন জুড়ে নাম থাকবে) -->
+    <div class="bg-animation">
+        <div class="row-left">Keshab Sarkar &nbsp; Keshab Sarkar &nbsp; Keshab Sarkar</div>
+        <div class="row-right">Keshab Sarkar &nbsp; Keshab Sarkar &nbsp; Keshab Sarkar</div>
+        <div class="row-left">Keshab Sarkar &nbsp; Keshab Sarkar &nbsp; Keshab Sarkar</div>
+        <div class="row-right">Keshab Sarkar &nbsp; Keshab Sarkar &nbsp; Keshab Sarkar</div>
+        <div class="row-left">Keshab Sarkar &nbsp; Keshab Sarkar &nbsp; Keshab Sarkar</div>
     </div>
 
-    <!-- স্ক্রিপ্ট এখন আলাদা ফাইলে -->
+    <div class="login-container">
+        <div class="login-card">
+            <!-- অ্যাপ লোগো এরিয়া -->
+            <div class="app-logo">
+                <!-- আপনার লোগো না থাকলে ডিফল্ট আইকন, লোগো থাকলে img ট্যাগ দিন -->
+                <img src="https://img.icons8.com/fluency/96/brain.png" alt="MyBrain Logo">
+            </div>
+
+            <h1>MyBrain</h1>
+            <p class="subtitle">Welcome back! Please login.</p>
+            
+            <button id="google-login-btn" class="google-btn">
+                <div class="icon-wrapper">
+                    <img src="https://img.icons8.com/color/48/ffffff/google-logo.png" alt="Google">
+                </div>
+                <span>Sign in with Google</span>
+            </button>
+            
+            <p class="footer-text">Secure access by Keshab Sarkar</p>
+        </div>
+    </div>
+
+    <!-- স্ক্রিপ্ট -->
     <script type="module" src="js/login.js"></script>
 
 </body>

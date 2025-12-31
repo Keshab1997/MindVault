@@ -1,51 +1,231 @@
-/* style-login.css */
+/* ===========================
+   ১. বেসিক সেটআপ এবং ফন্ট
+   =========================== */
+:root {
+    --text-color: #ffffff;
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    --glow: rgba(106, 17, 203, 0.3);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
 body {
+    font-family: 'Poppins', sans-serif;
+    height: 100svh; /* Mobile viewport fix */
+    width: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    background-color: #f4f6f8;
-    font-family: 'Segoe UI', sans-serif;
-    margin: 0;
+    color: var(--text-color);
+    position: relative;
+}
+
+/* ===========================
+   ২. ব্যাকগ্রাউন্ড নেম অ্যানিমেশন (Mobile Fixed)
+   =========================== */
+.bg-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px 0;
+    opacity: 0.04;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.bg-animation div {
+    font-size: 5rem;
+    font-weight: 900;
+    white-space: nowrap;
+    text-transform: uppercase;
+    color: transparent;
+    -webkit-text-stroke: 2px #fff;
+    
+    /* মোবাইলের জন্য খুব গুরুত্বপূর্ণ */
+    width: max-content; /* টেক্সট যতটুকু লম্বা ততটুকু জায়গা নেবে */
+    will-change: transform; /* মোবাইলকে আগে থেকেই বলে রাখা যে এটা নড়বে */
+    backface-visibility: hidden; /* গ্লিচ বন্ধ করে */
+    -webkit-backface-visibility: hidden;
+}
+
+/* অ্যানিমেশন ডিরেকশন - 3D ব্যবহার করা হয়েছে মোবাইলের জন্য */
+.row-left { 
+    animation: slideLeft 40s linear infinite; 
+}
+.row-right { 
+    animation: slideRight 45s linear infinite; 
+}
+
+/* translate3d ব্যবহার করলে মোবাইল GPU ব্যবহার করে, তাই অ্যানিমেশন স্মুথ হয় */
+@keyframes slideLeft {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes slideRight {
+    0% { transform: translate3d(-50%, 0, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+}
+
+/* ===========================
+   ৩. লগইন কার্ড ডিজাইন
+   =========================== */
+.login-container {
+    padding: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
 }
 
 .login-card {
-    background: white;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    text-align: center;
+    position: relative;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    padding: 50px 30px;
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    overflow: hidden;
 }
 
-.login-card h1 {
-    margin-bottom: 0.5rem;
-    color: #333;
+.login-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 60%);
+    opacity: 0.4;
+    z-index: -1;
+    pointer-events: none;
 }
 
-.login-card p {
-    color: #666;
-    margin-bottom: 2rem;
+.app-logo img {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 15px rgba(255,255,255,0.2));
+    animation: float 4s ease-in-out infinite;
 }
 
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+
+h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 1.5px;
+    background: linear-gradient(to right, #fff, #a5a5a5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 40px;
+}
+
+/* Google Button */
 .google-btn {
-    background: #4285F4;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-size: 16px;
-    cursor: pointer;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    background: #ffffff;
+    color: #1a1a2e;
     width: 100%;
-    transition: background 0.3s;
+    padding: 16px;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    font-family: 'Poppins', sans-serif;
 }
 
-.google-btn:hover {
-    background: #357ae8;
+.google-btn:active {
+    transform: scale(0.96);
+}
+
+.icon-wrapper {
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+}
+.icon-wrapper img {
+    width: 26px;
+    height: 26px;
+}
+
+.footer-text {
+    margin-top: 30px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* ===========================
+   ৪. মোবাইল স্পেশাল অপটিমাইজেশন
+   =========================== */
+@media (max-width: 768px) {
+    .bg-animation {
+        justify-content: space-between;
+    }
+    .bg-animation div {
+        /* মোবাইলে ফন্ট একটু ছোট করা হলো যাতে স্মুথ চলে, কিন্তু দেখতে বড়ই লাগবে */
+        font-size: 4rem; 
+        opacity: 0.05; 
+        -webkit-text-stroke: 1px rgba(255,255,255,0.8);
+    }
+
+    .login-container {
+        padding: 15px;
+    }
+
+    .login-card {
+        padding: 60px 25px;
+        width: 90%;
+        backdrop-filter: blur(25px);
+    }
+
+    .app-logo img {
+        width: 100px;
+        height: 100px;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+    }
+    
+    .subtitle {
+        font-size: 1.1rem;
+    }
 }
