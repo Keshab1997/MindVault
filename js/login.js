@@ -6,22 +6,19 @@ const loginBtn = document.getElementById('google-login-btn');
 // ১. লগইন বাটনের কাজ
 if (loginBtn) {
     loginBtn.addEventListener('click', () => {
-        // ১. ইউজার এজেন্ট চেক করা (APK ডিটেক্ট করার জন্য)
-        const userAgent = navigator.userAgent.toLowerCase();
-        
-        // যদি 'wv' থাকে, তার মানে এটা অ্যান্ড্রয়েড ওয়েবভিউ বা APK
-        const isApk = userAgent.includes('wv') && userAgent.includes('android');
+        // মোবাইল ডিভাইস কিনা চেক করা (Android, iPhone, etc.)
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        if (isApk) {
-            // === শুধুমাত্র APK এর জন্য Redirect ===
-            console.log("Environment: APK (Using Redirect)");
+        if (isMobile) {
+            // === মোবাইল (ব্রাউজার অথবা APK) এর জন্য Redirect ===
+            // মোবাইলে পপআপ ঝামেলা করে, তাই রিডাইরেক্ট সবচেয়ে নিরাপদ
+            console.log("Device: Mobile (Using Redirect)");
             signInWithRedirect(auth, provider);
         } else {
-            // === ওয়েবসাইট (লোকাল বা লাইভ) এর জন্য Popup ===
-            console.log("Environment: Web/Localhost (Using Popup)");
+            // === কম্পিউটার/ডেস্কটপ এর জন্য Popup ===
+            console.log("Device: Desktop (Using Popup)");
             signInWithPopup(auth, provider)
                 .then((result) => {
-                    // সফল হলে ড্যাশবোর্ডে যাও
                     console.log("Login Success:", result.user);
                     window.location.replace("dashboard.html");
                 })
@@ -33,11 +30,11 @@ if (loginBtn) {
     });
 }
 
-// ২. ইউজার লগইন চেক (রিডাইরেক্ট বা রিফ্রেশ হওয়ার পর এটা কাজ করবে)
+// ২. ইউজার লগইন চেক (মোবাইলে রিডাইরেক্ট হয়ে ফিরে আসার পর এটা কাজ করবে)
 onAuthStateChanged(auth, (user) => {
     if (user) {
         console.log("User detected:", user.email);
-        // ইউজার লগইন থাকলে ড্যাশবোর্ডে পাঠিয়ে দিন
+        // লগইন সফল হলে ড্যাশবোর্ডে পাঠিয়ে দিন
         window.location.replace("dashboard.html");
     }
 });
