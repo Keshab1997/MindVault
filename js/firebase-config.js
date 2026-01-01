@@ -1,6 +1,6 @@
 // js/firebase-config.js
 
-// ১. ইম্পোর্ট সেকশন (সব প্রয়োজনীয় টুলস এখানে আনা হয়েছে)
+// ১. ইম্পোর্ট সেকশন
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
     getAuth, 
@@ -22,9 +22,9 @@ import {
     where
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+// (Storage ইম্পোর্ট বাদ দেওয়া হয়েছে কারণ আমরা Cloudinary ব্যবহার করছি)
 
-// ২. কনফিগারেশন (আপনার দেওয়া কি-গুলো ঠিক রাখা হয়েছে)
+// ২. কনফিগারেশন (তোমার দেওয়া তথ্য)
 const firebaseConfig = {
   apiKey: "AIzaSyDnXqLbGRyaOqP58edPaS5uut1dxDyDSQU",
   authDomain: "mybrain-1df31.firebaseapp.com",
@@ -39,15 +39,15 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
-const provider = new GoogleAuthProvider(); // লগইনের জন্য প্রোভাইডার সেটআপ
+// const storage = ... (বাদ দেওয়া হয়েছে)
+const provider = new GoogleAuthProvider();
 
-// ৪. এক্সপোর্ট (খুবই গুরুত্বপূর্ণ: সব ফাংশন এখান থেকে এক্সপোর্ট করতে হবে)
+// ৪. এক্সপোর্ট
 export { 
     app, 
     auth, 
     db, 
-    storage, 
+    // storage, (বাদ দেওয়া হয়েছে)
     provider, 
     signInWithPopup, 
     signInWithRedirect, 

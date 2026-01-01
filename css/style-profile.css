@@ -1,0 +1,126 @@
+/* css/style-profile.css */
+
+.profile-widget {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px 25px;
+    
+    /* সাইজ ফিক্স: প্যারেন্টের পুরোটা নেবে */
+    width: 100%; 
+    box-sizing: border-box;
+    margin: 0; /* মার্জিন জিরো, কারণ কন্টেইনারে গ্যাপ দেওয়া আছে */
+    
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    
+    /* শ্যাডো একটু সফট করা হয়েছে */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #e1e3e8;
+    position: relative;
+    overflow: hidden;
+}
+
+/* বাম পাশে রঙিন বর্ডার (Gradient) */
+.profile-widget::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 6px;
+    background: linear-gradient(to bottom, #1877f2, #00c6ff);
+}
+
+/* প্রোফাইল ছবি */
+.profile-img-box {
+    position: relative;
+    flex-shrink: 0; /* ছবি যাতে চ্যাপ্টা না হয় */
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* তথ্যের সেকশন */
+.profile-info {
+    flex-grow: 1;
+}
+
+.greeting-text {
+    font-size: 13px;
+    color: #65676b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.user-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1c1e21;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.user-email {
+    font-size: 14px;
+    color: #65676b;
+    margin-top: 4px;
+}
+
+/* সময় এবং তারিখ সেকশন */
+.time-widget {
+    text-align: right;
+    min-width: 140px; /* সময় যাতে ভেঙে নিচে না নামে */
+}
+
+.current-time {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1877f2;
+    font-family: 'Segoe UI', sans-serif; /* ক্লিন ফন্ট */
+    line-height: 1;
+}
+
+.current-date {
+    font-size: 12px;
+    color: #65676b;
+    margin-top: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* মোবাইল রেসপন্সিভ */
+@media (max-width: 650px) {
+    .profile-widget {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px 15px;
+        gap: 15px;
+    }
+
+    .profile-widget::before {
+        width: 100%;
+        height: 5px; /* মোবাইলে বর্ডার উপরে */
+    }
+    
+    .time-widget {
+        text-align: center;
+        width: 100%;
+        border-top: 1px solid #f0f2f5;
+        padding-top: 10px;
+        margin-top: 5px;
+    }
+
+    .profile-avatar {
+        width: 70px;
+        height: 70px;
+    }
+}

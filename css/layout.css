@@ -1,0 +1,21 @@
+<nav class="navbar">
+    <!-- এই নতুন div টি এলাইনমেন্ট ঠিক করবে -->
+    <div class="nav-content-wrapper">
+        <div class="logo-section">
+            <span class="logo-icon">🧠</span>
+            <span class="logo-text">MyBrain</span>
+        </div>
+        
+        <div class="nav-right">
+            <button id="theme-toggle" class="btn-icon" title="Toggle Dark Mode">🌙</button>
+            <div class="nav-links">
+                <a href="#" class="nav-item active">Notes</a>
+                <a href="vault.html" class="nav-item">Vault</a>
+            </div>
+            <button id="logout-btn" class="btn-logout">
+                <img src="https://img.icons8.com/ios-glyphs/30/fa314a/exit.png" alt="Logout" style="width:16px; margin-right:5px;">
+                Logout
+            </button>
+        </div>
+    </div>
+</nav>

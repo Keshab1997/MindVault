@@ -1,0 +1,46 @@
+:root {
+    --bg-color: #f4f4f9;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+    --text-muted: #666666;
+    --border-color: #e0e0e0;
+    --input-bg: #ffffff;
+    --primary-color: #000000;
+}
+
+/* ডার্ক মোড ক্লাস */
+body.dark-mode {
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --text-color: #e0e0e0;
+    --text-muted: #a0a0a0;
+    --border-color: #333333;
+    --input-bg: #2d2d2d;
+    --primary-color: #ffffff;
+}
+
+/* ভেরিয়েবল অ্যাপ্লাই করা */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.navbar, .input-area, .filter-btn, .view-btn {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+textarea, input[type="text"] {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+/* নোট কার্ডের স্টাইল (তোমার dashboard.js এ জেনারেট হওয়া কার্ডের ক্লাস) */
+.note-card {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color);
+}
