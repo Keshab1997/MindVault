@@ -1,16 +1,14 @@
 document.getElementById('saveBtn').addEventListener('click', async () => {
-    // ১. ব্রাউজারের বর্তমান ট্যাবের লিংক এবং টাইটেল নেওয়া
+    // ১. ব্রাউজারের বর্তমান ট্যাবের লিংক নেওয়া
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    // ২. আপনার ড্যাশবোর্ডের ঠিকানা (লাইভ হলে লাইভ লিংক দেবেন)
-    // বর্তমানে আপনার লোকাল সার্ভার লিংক দিচ্ছি:
-    const myBrainUrl = "http://127.0.0.1:5500/dashboard.html"; 
+    // ২. আপনার লাইভ ওয়েবসাইটের ড্যাশবোর্ড লিংক [UPDATED]
+    const myBrainUrl = "https://my-brain-three.vercel.app/dashboard.html"; 
     
-    // ৩. লিংকটি এনকোড করা যাতে URL এ পাঠানো যায়
+    // ৩. লিংকটি এনকোড করা
     const linkToSave = encodeURIComponent(tab.url);
     
-    // ৪. নতুন ট্যাবে MyBrain ওপেন করা প্যারামিটার সহ
-    // উদাহরণ: dashboard.html?text=https://google.com
+    // ৪. নতুন ট্যাবে ওপেন করা
     chrome.tabs.create({ 
         url: `${myBrainUrl}?text=${linkToSave}` 
     });
