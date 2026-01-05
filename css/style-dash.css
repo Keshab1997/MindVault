@@ -1,21 +1,21 @@
-/* css/style-dash.css - FIXED ALIGNMENT VERSION */
+/* css/style-dash.css */
 
-/* --------------------------------------------------
+/* ==================================================
    ১. সার্চ এবং ভিউ কন্ট্রোল (Search & View)
-   -------------------------------------------------- */
+   ================================================== */
 .search-and-view {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 15px;
-    width: 100%; /* কন্টেইনারের পুরো জায়গা নেবে */
+    width: 100%;
     margin-bottom: 20px;
+    margin-top: 10px;
 }
 
 .search-wrapper {
     flex-grow: 1; /* সার্চ বার যতটা সম্ভব জায়গা নেবে */
     position: relative;
-    margin: 0; /* আগের মার্জিন রিসেট */
 }
 
 #searchInput {
@@ -28,6 +28,7 @@
     outline: none;
     box-shadow: 0 2px 5px rgba(0,0,0,0.02);
     transition: all 0.3s ease;
+    box-sizing: border-box; /* ইনপুট বক্স যাতে ভেঙে না যায় */
 }
 
 #searchInput:focus {
@@ -36,10 +37,11 @@
     transform: translateY(-1px);
 }
 
+/* ভিউ টগল বাটন (ডেস্কটপের জন্য) */
 .view-toggles {
-    display: flex;
+    display: flex; /* ডেস্কটপে visible থাকবে */
     gap: 8px;
-    flex-shrink: 0; /* বাটন যাতে চ্যাপ্টা না হয় */
+    flex-shrink: 0;
 }
 
 .view-btn {
@@ -63,9 +65,9 @@
     border-color: #1877f2;
 }
 
-/* --------------------------------------------------
+/* ==================================================
    ২. ফিল্টার বাটন (Filter Section)
-   -------------------------------------------------- */
+   ================================================== */
 .filter-wrapper {
     display: flex;
     gap: 10px;
@@ -73,11 +75,10 @@
     overflow-x: auto; /* মোবাইলে স্ক্রল হবে */
     padding-bottom: 5px;
     width: 100%;
-    /* স্ক্রলবার লুকানো (ঐচ্ছিক) */
-    scrollbar-width: none; 
+    scrollbar-width: none; /* ফায়ারফক্সে স্ক্রলবার লুকানো */
 }
 .filter-wrapper::-webkit-scrollbar {
-    display: none;
+    display: none; /* ক্রোমে স্ক্রলবার লুকানো */
 }
 
 .filter-btn {
@@ -90,7 +91,7 @@
     cursor: pointer;
     font-size: 14px;
     transition: 0.2s;
-    white-space: nowrap; /* টেক্সট ভাঙবে না */
+    white-space: nowrap;
 }
 
 .filter-btn:hover {
@@ -98,15 +99,15 @@
 }
 
 .filter-btn.active {
-    background: #1877f2; /* ব্র্যান্ড ব্লু */
+    background: #1877f2;
     color: #fff;
 }
 
-/* --------------------------------------------------
-   ৩. ইনপুট এরিয়া (Input Section) - FIXED
-   -------------------------------------------------- */
+/* ==================================================
+   ৩. ইনপুট এরিয়া (Input Section)
+   ================================================== */
 .input-area {
-    width: 100%; /* এখন প্রোফাইল কার্ডের সমান হবে */
+    width: 100%;
     background: #fff;
     padding: 20px;
     border-radius: 12px;
@@ -114,7 +115,6 @@
     border: 1px solid #e1e3e8;
     margin-bottom: 30px;
     box-sizing: border-box;
-    position: relative;
 }
 
 #noteInput {
@@ -127,11 +127,12 @@
     font-family: inherit;
     color: #1c1e21;
     margin-bottom: 10px;
+    box-sizing: border-box;
 }
 
 #noteInput::placeholder {
     color: #8a8d91;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .input-actions {
@@ -142,7 +143,6 @@
     padding-top: 12px;
 }
 
-/* আইকন */
 .action-icons {
     display: flex;
     gap: 15px;
@@ -155,7 +155,6 @@
     border-radius: 50%;
     color: #65676b;
     transition: 0.2s;
-    display: flex; /* আইকন সেন্টারে রাখার জন্য */
 }
 
 .action-icon:hover {
@@ -163,7 +162,6 @@
     color: #1877f2;
 }
 
-/* সেভ বাটন */
 #saveBtn {
     background-color: #1877f2;
     color: white;
@@ -180,21 +178,16 @@
     background-color: #166fe5;
 }
 
-#saveBtn:disabled {
-    background-color: #b0c2db;
-    cursor: not-allowed;
-}
-
-/* --------------------------------------------------
+/* ==================================================
    ৪. গ্রিড এবং কার্ড ডিজাইন (Masonry & Cards)
-   -------------------------------------------------- */
+   ================================================= */
 .masonry-grid {
     width: 100%;
-    column-count: 2; /* ডিফল্ট ২ কলাম */
+    column-count: 3; /* ডিফল্ট ৩ কলাম (বড় স্ক্রিনে) */
     column-gap: 20px;
 }
 
-/* কার্ডের ডিজাইন */
+/* কার্ড স্টাইল */
 .note-card {
     background: #fff;
     border-radius: 12px;
@@ -202,10 +195,11 @@
     margin-bottom: 20px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     border: 1px solid #e1e3e8;
-    break-inside: avoid; /* কার্ড ভাঙবে না */
-    transition: transform 0.2s, box-shadow 0.2s;
-    display: inline-block; /* Masonry ফিক্স */
+    break-inside: avoid;
+    display: inline-block;
     width: 100%;
+    box-sizing: border-box;
+    transition: transform 0.2s;
 }
 
 .note-card:hover {
@@ -220,7 +214,7 @@
     word-break: break-word;
 }
 
-/* কার্ডের নিচের ফুটার */
+/* ডিলিট এবং ফুটার */
 .card-footer {
     display: flex;
     justify-content: space-between;
@@ -246,9 +240,9 @@
     border-radius: 50%;
 }
 
-/* --------------------------------------------------
-   ৫. প্রিভিউ কার্ড (Preview)
-   -------------------------------------------------- */
+/* ==================================================
+   ৫. প্রিভিউ কার্ড (Link Preview)
+   ================================================= */
 .link-preview-box {
     margin-top: 10px;
 }
@@ -288,39 +282,46 @@
     overflow: hidden;
 }
 
-/* --------------------------------------------------
-   ৬. রেসপনসিভ (Mobile & Large Screens)
-   -------------------------------------------------- */
+/* ==================================================
+   ৬. রেসপনসিভ ডিজাইন (Mobile & Tablet)
+   ================================================= */
 
-/* বড় স্ক্রিনে ৩ কলাম */
-@media (min-width: 1024px) {
+/* ট্যাবলেট ভিউ */
+@media (max-width: 1024px) {
     .masonry-grid {
-        column-count: 3;
+        column-count: 2; /* ট্যাবলেটে ২ কলাম */
     }
 }
 
-/* মোবাইল স্ক্রিন */
+/* মোবাইল ভিউ */
 @media (max-width: 650px) {
     .masonry-grid {
         column-count: 1; /* মোবাইলে ১ কলাম */
     }
     
     .input-actions {
-        /* মোবাইলে বাটন নিচে নামবে না, পাশাপাশিই থাকবে */
         flex-direction: row; 
     }
     
-    .view-toggles {
-        display: none; /* মোবাইলে গ্রিড/লিস্ট বাটন দেখানোর দরকার নেই (যদি চান) */
+    
+
+    .search-wrapper {
+        width: 100%;
     }
 }
 
-/* লিস্ট ভিউ স্টাইল (যখন লিস্ট বাটনে ক্লিক করা হবে) */
+/* ==================================================
+   ৭. লিস্ট ভিউ মোড (JS এর মাধ্যমে টগল হলে)
+   ================================================= */
 .masonry-grid.list-view {
-    column-count: 1;
+    column-count: 1 !important;
+    display: block;
 }
+
 .masonry-grid.list-view .note-card {
     max-width: 800px;
     margin-left: auto;
     margin-right: auto;
+    margin-bottom: 20px;
+    display: block;
 }

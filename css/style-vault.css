@@ -7,26 +7,198 @@ body {
     background-color: #f8fafc; /* সফট ব্লু-গ্রে ব্যাকগ্রাউন্ড */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #334155;
+    margin: 0;
+    padding: 0;
 }
 
 .container {
-    max-width: 1000px;
+    max-width: 1200px; /* কন্টেইনার একটু বড় করা হয়েছে যাতে লম্বা ফর্ম সুন্দর দেখায় */
     margin: 0 auto;
     padding: 0 20px;
 }
 
 /* =========================================
-   ২. টুলবার (Import/Export Box) - নতুন ডিজাইন
+   ২. সার্চ এবং ভিউ সেকশন (ড্যাশবোর্ডের মতো)
+   ========================================= */
+.search-and-view {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.search-wrapper {
+    flex-grow: 1;
+    position: relative;
+}
+
+.search-wrapper input {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 50px;
+    border: 1px solid #cbd5e1;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.3s ease;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    box-sizing: border-box;
+}
+
+.search-wrapper input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+/* ভিউ টগল বাটন */
+.view-toggles {
+    display: flex;
+    background: #ffffff;
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    gap: 5px;
+}
+
+.view-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 18px;
+    color: #94a3b8;
+    transition: all 0.2s;
+    line-height: 1;
+}
+
+.view-btn:hover {
+    background-color: #f1f5f9;
+    color: #475569;
+}
+
+.view-btn.active {
+    background-color: #e0f2fe;
+    color: #0284c7;
+    font-weight: bold;
+}
+
+/* =========================================
+   ৩. ভল্ট ইনপুট এরিয়া (Add Secret Form) - [UPDATED]
+   ========================================= */
+.vault-input-area {
+    background-color: #ffffff;
+    padding: 25px 30px; /* প্যাডিং একটু কমানো হয়েছে */
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin: 0 auto 40px auto;
+    border: 1px solid #f1f5f9;
+    
+    /* 👇 আগে 500px ছিল, এখন ফুল উইডথ */
+    max-width: 100%; 
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.vault-input-area h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #1e293b;
+    text-align: left; /* টাইটেল বামে আনা হয়েছে */
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 10px;
+}
+
+/* ইনপুট ফর্ম ডিজাইন - [UPDATED GRID] */
+.vault-form {
+    display: grid;
+    /* ৩টি ইনপুট এবং ১টি বাটন পাশাপাশি থাকবে (Desktop এ) */
+    grid-template-columns: 1fr 1fr 1fr auto; 
+    gap: 15px;
+    align-items: center;
+}
+
+.vault-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #334155;
+    background: #ffffff;
+    transition: all 0.2s;
+    box-sizing: border-box;
+    height: 48px; /* ফিক্সড হাইট যাতে সব সমান দেখায় */
+}
+
+.vault-input:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* পাসওয়ার্ড গ্রুপ */
+.password-group {
+    position: relative;
+    width: 100%;
+}
+
+.icon-btn-small {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #94a3b8;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.icon-btn-small:hover {
+    color: #475569;
+}
+
+/* সেভ বাটন - [UPDATED] */
+.btn-full {
+    width: auto; /* ফুল উইডথ বন্ধ করা হয়েছে */
+    padding: 0 25px; /* দুই পাশে জায়গা */
+    height: 48px; /* ইনপুটের সমান হাইট */
+    font-weight: 600;
+    font-size: 15px;
+    color: white;
+    background-color: #2563eb;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0; /* মার্জিন সরানো হয়েছে */
+    white-space: nowrap; /* টেক্সট যাতে এক লাইনে থাকে */
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+.btn-full:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -2px rgba(37, 99, 235, 0.3);
+}
+
+/* =========================================
+   ৪. টুলবার (Import/Export Box)
    ========================================= */
 .vault-toolbar {
     background-color: #ffffff;
-    margin: 30px auto;
-    padding: 15px 25px;
+    margin: 0 auto 40px auto;
+    padding: 15px 20px;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.03);
     border: 1px solid #e2e8f0;
-    
-    /* লেআউট */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -43,23 +215,22 @@ body {
 
 .toolbar-actions {
     display: flex;
-    gap: 12px;
+    gap: 10px;
 }
 
-/* সেকেন্ডারি বাটন (Import/Export) */
 .btn-secondary {
     background: #f8fafc;
     border: 1px solid #cbd5e1;
-    padding: 9px 16px;
+    padding: 8px 16px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: #334155;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .btn-secondary:hover {
@@ -67,117 +238,10 @@ body {
     border-color: #94a3b8;
     color: #0f172a;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 /* =========================================
-   ৩. ভল্ট ইনপুট এরিয়া (Add Secret Form)
-   ========================================= */
-.vault-input-area {
-    background-color: #ffffff;
-    padding: 40px;
-    border-radius: 16px;
-    /* সুন্দর সফট শ্যাডো */
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-    max-width: 480px;
-    margin: 0 auto 50px auto;
-    border: 1px solid #f1f5f9;
-}
-
-.vault-input-area h3 {
-    margin-bottom: 25px;
-    color: #1e293b;
-    text-align: center;
-    font-size: 1.4rem;
-    font-weight: 700;
-}
-
-/* ইনপুট ফিল্ড ডিজাইন */
-.vault-form {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
-.vault-input {
-    width: 100%;
-    padding: 14px 16px;
-    border: 1px solid #cbd5e1;
-    border-radius: 10px;
-    font-size: 15px;
-    color: #334155;
-    background: #ffffff;
-    transition: all 0.2s;
-    box-sizing: border-box; /* ইম্পরট্যান্ট */
-}
-
-.vault-input:focus {
-    border-color: #3b82f6;
-    outline: none;
-    background: #fff;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-}
-
-/* পাসওয়ার্ড টগল বাটন পজিশন */
-.password-group {
-    position: relative;
-    width: 100%;
-}
-
-.password-group input {
-    padding-right: 50px;
-}
-
-.icon-btn-small {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    color: #94a3b8;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    transition: color 0.2s;
-}
-
-.icon-btn-small:hover {
-    color: #475569;
-}
-
-/* মেইন সেভ বাটন */
-.btn-full {
-    width: 100%;
-    padding: 14px;
-    font-weight: 600;
-    font-size: 16px;
-    color: white;
-    background-color: #2563eb;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 10px;
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-}
-
-.btn-full:hover {
-    background-color: #1d4ed8;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 10px -2px rgba(37, 99, 235, 0.3);
-}
-
-/* স্ট্যাটাস মেসেজ */
-#vaultStatus {
-    font-size: 13px;
-    margin-bottom: 15px;
-}
-
-/* =========================================
-   ৪. কার্ড গ্রিড এবং লিস্ট
+   ৫. কার্ড গ্রিড এবং লিস্ট সিস্টেম
    ========================================= */
 .vault-list-container h3 {
     text-align: center;
@@ -189,14 +253,20 @@ body {
 
 .vault-grid {
     display: grid;
-    /* অটোমেটিক ৩টা, ২টা বা ১টা কলাম হবে স্ক্রিন সাইজ অনুযায়ী */
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
     padding-bottom: 60px;
+    transition: all 0.3s ease;
+}
+
+.vault-grid.list-view {
+    grid-template-columns: 1fr !important;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 /* =========================================
-   ৫. সিক্রেট কার্ড (Secret Card) ডিজাইন
+   ৬. সিক্রেট কার্ড (Secret Card) ডিজাইন
    ========================================= */
 .secret-card {
     background: white;
@@ -211,7 +281,12 @@ body {
     overflow: hidden;
 }
 
-/* কার্ডের উপরে হোভার ইফেক্ট */
+.secret-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e1;
+}
+
 .secret-card::before {
     content: '';
     position: absolute;
@@ -224,23 +299,16 @@ body {
     transition: opacity 0.3s;
 }
 
-.secret-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.1);
-    border-color: #cbd5e1;
-}
-
 .secret-card:hover::before {
     opacity: 1;
 }
 
-/* কার্ড হেডার */
 .secret-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
     border-bottom: 1px solid #f1f5f9;
 }
 
@@ -256,8 +324,8 @@ body {
     border: none;
     color: #f43f5e;
     cursor: pointer;
-    font-size: 15px;
-    padding: 5px 8px;
+    font-size: 14px;
+    padding: 4px 8px;
     border-radius: 6px;
     transition: 0.2s;
 }
@@ -267,7 +335,6 @@ body {
     color: #e11d48;
 }
 
-/* ইউজারনেম সেকশন (কপি বাটন সহ) */
 .secret-user-row {
     display: flex;
     align-items: center;
@@ -277,11 +344,6 @@ body {
     padding: 8px 10px;
     border-radius: 8px;
     border: 1px solid #f1f5f9;
-}
-
-.secret-user-row:hover {
-    border-color: #e2e8f0;
-    background-color: #f1f5f9;
 }
 
 .secret-username {
@@ -300,17 +362,15 @@ body {
     cursor: pointer;
     font-size: 14px;
     opacity: 0.5;
-    padding: 4px;
+    padding: 2px 5px;
     border-radius: 4px;
-    transition: 0.2s;
 }
 
 .copy-user-btn:hover {
     opacity: 1;
-    background-color: #cbd5e1;
+    background-color: #e2e8f0;
 }
 
-/* পাসওয়ার্ড এরিয়া */
 .secret-pass-area {
     background: #f1f5f9;
     padding: 10px 12px;
@@ -330,10 +390,9 @@ body {
     letter-spacing: 2px;
 }
 
-/* অ্যাকশন বাটনস (Show/Copy) */
 .card-actions {
     display: flex;
-    gap: 6px;
+    gap: 8px;
 }
 
 .card-actions button {
@@ -342,11 +401,9 @@ body {
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    padding: 6px 8px;
+    padding: 6px 10px;
     transition: all 0.2s;
     color: #475569;
-    display: flex;
-    align-items: center;
 }
 
 .card-actions button:hover {
@@ -356,10 +413,33 @@ body {
 }
 
 /* =========================================
-   ৬. মোবাইল রেসপন্সিভ
+   ৭. মোবাইল রেসপন্সিভ (Mobile Breakpoint)
    ========================================= */
-@media (max-width: 650px) {
-    /* টুলবার বক্স */
+@media (max-width: 900px) {
+    /* ট্যাবলেট বা মোবাইলে ইনপুটগুলো আবার নিচে নিচে চলে আসবে */
+    .vault-form {
+        grid-template-columns: 1fr; /* এক কলাম */
+    }
+    
+    .btn-full {
+        width: 100%; /* বাটন আবার ফুল উইডথ */
+        margin-top: 10px;
+    }
+
+    .container {
+        padding: 0 15px;
+    }
+
+    .search-and-view {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .view-toggles {
+        justify-content: center;
+    }
+
     .vault-toolbar {
         flex-direction: column;
         align-items: stretch;
@@ -370,25 +450,14 @@ body {
     .toolbar-actions {
         display: flex;
         justify-content: space-between;
-        width: 100%;
     }
     
     .btn-secondary {
-        flex: 1; /* বাটনগুলো সমান হবে */
+        flex: 1;
         justify-content: center;
-        padding: 12px;
     }
 
-    /* ইনপুট এরিয়া */
-    .vault-input-area {
-        padding: 25px;
-        width: auto;
-        margin: 0 10px 40px 10px;
-    }
-
-    /* গ্রিড */
     .vault-grid {
-        grid-template-columns: 1fr; /* ১ কলাম */
-        padding: 0 10px 60px 10px;
+        grid-template-columns: 1fr;
     }
 }

@@ -12,13 +12,19 @@ const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}
 
 // DOM এলিমেন্টস
 let unsubscribeNotes = null;
-const logoutBtn = document.getElementById('logout-btn');
+
+// [FIXED] Logout ID সঠিক করা হয়েছে
+const logoutBtn = document.getElementById('menu-logout-btn'); 
+
 const saveBtn = document.getElementById('saveBtn');
 const noteInput = document.getElementById('noteInput');
 const fileInput = document.getElementById('fileInput');
 const statusText = document.getElementById('uploadStatus');
 
-// প্রিভিউ এলিমেন্টস (নতুন)
+// [NEW] সার্চ ইনপুট ধরা হয়েছে
+const searchInput = document.getElementById('searchInput');
+
+// প্রিভিউ এলিমেন্টস
 const previewContainer = document.getElementById('image-preview-container');
 const previewImage = document.getElementById('image-preview');
 const removeImageBtn = document.getElementById('remove-image-btn');
@@ -29,32 +35,47 @@ const triggerLink = document.getElementById('triggerLink');
 
 // --- ১. UI ইভেন্ট লিসেনার ---
 
+// [NEW] সার্চ লজিক যোগ করা হয়েছে
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        const searchText = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.note-card');
+
+        cards.forEach(card => {
+            const textContent = card.innerText.toLowerCase();
+            if (textContent.includes(searchText)) {
+                card.style.display = 'block'; // ম্যাচ করলে দেখাবে
+            } else {
+                card.style.display = 'none';  // ম্যাচ না করলে লুকাবে
+            }
+        });
+    });
+}
+
 // ক্যামেরা আইকনে ক্লিক
 if(triggerFile && fileInput) {
     triggerFile.addEventListener('click', () => fileInput.click());
 }
 
-// ফাইল সিলেক্ট এবং প্রিভিউ লজিক (নতুন)
+// ফাইল সিলেক্ট এবং প্রিভিউ লজিক
 if(fileInput) {
     fileInput.addEventListener('change', () => {
         const file = fileInput.files[0];
         if(file) {
-            // প্রিভিউ দেখানোর জন্য FileReader ব্যবহার
             const reader = new FileReader();
             reader.onload = function(e) {
-                previewImage.src = e.target.result; // ছবির ডাটা
-                previewContainer.style.display = 'block'; // কন্টেইনার শো করা
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'block';
             }
             reader.readAsDataURL(file);
 
-            // আইকন কালার চেঞ্জ
             triggerFile.style.color = '#007bff'; 
             triggerFile.title = "Selected: " + file.name;
         }
     });
 }
 
-// প্রিভিউ রিমুভ বাটন (নতুন)
+// প্রিভিউ রিমুভ বাটন
 if(removeImageBtn) {
     removeImageBtn.addEventListener('click', () => {
         clearFileInput();
@@ -78,6 +99,15 @@ onAuthStateChanged(auth, (user) => {
         console.log("User Logged In:", user.uid);
         loadUserNotes(user.uid);
         handleSharedContent(user.uid);
+        
+        // লগইন করার পর ইউজারনেম আপডেট (Navbar)
+        const navUserName = document.getElementById('nav-user-name');
+        const navUserImg = document.getElementById('nav-user-img');
+        const navProfileDiv = document.getElementById('nav-mini-profile');
+
+        if(navProfileDiv) navProfileDiv.style.display = 'flex';
+        if(navUserName) navUserName.textContent = user.displayName || user.email.split('@')[0];
+        if(navUserImg && user.photoURL) navUserImg.src = user.photoURL;
     }
 });
 
@@ -110,7 +140,7 @@ async function handleSharedContent(userId) {
     }
 }
 
-// --- ৪. ম্যানুয়াল সেভ লজিক (Cloudinary সহ) ---
+// --- ৪. ম্যানুয়াল সেভ লজিক ---
 if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
         const text = noteInput.value;
@@ -127,7 +157,7 @@ if (saveBtn) {
             let fileUrl = null;
             let fileType = 'text';
 
-            // ১. ছবি থাকলে Cloudinary তে আপলোড করো
+            // ১. ছবি থাকলে Cloudinary তে আপলোড
             if (file) {
                 const formData = new FormData();
                 formData.append('file', file);
@@ -153,7 +183,7 @@ if (saveBtn) {
             if (fileUrl) type = 'image';
             else if (isValidURL(text)) type = 'link';
 
-            // ৩. ডাটাবেসে সেভ করা (Firestore)
+            // ৩. ডাটাবেসে সেভ
             await addDoc(collection(db, "notes"), {
                 uid: user.uid,
                 text: text,
@@ -162,9 +192,9 @@ if (saveBtn) {
                 timestamp: serverTimestamp()
             });
 
-            // সব ইনপুট ক্লিয়ার করা
+            // সব ইনপুট ক্লিয়ার
             noteInput.value = "";
-            clearFileInput(); // ছবি এবং প্রিভিউ রিসেট
+            clearFileInput(); 
 
         } catch (error) {
             console.error("Error saving:", error);
@@ -177,11 +207,11 @@ if (saveBtn) {
     });
 }
 
-// --- হেল্পার: ফাইল ইনপুট এবং প্রিভিউ রিসেট ---
+// --- হেল্পার: ফাইল ইনপুট রিসেট ---
 function clearFileInput() {
-    fileInput.value = ""; // ফাইল ডিলিট
-    if(previewContainer) previewContainer.style.display = 'none'; // প্রিভিউ হাইড
-    if(previewImage) previewImage.src = ""; // সোর্স রিমুভ
+    fileInput.value = ""; 
+    if(previewContainer) previewContainer.style.display = 'none'; 
+    if(previewImage) previewImage.src = ""; 
     
     if(triggerFile) {
         triggerFile.style.color = ""; 
@@ -189,11 +219,19 @@ function clearFileInput() {
     }
 }
 
-// --- ৫. লগআউট ---
+// --- ৫. লগআউট (FIXED) ---
 if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-        signOut(auth).then(() => window.location.href = "index.html");
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault(); // লিংকের ডিফল্ট বিহেভিয়ার বন্ধ করা
+        signOut(auth).then(() => {
+            console.log("User signed out");
+            window.location.href = "index.html";
+        }).catch((error) => {
+            console.error("Sign Out Error", error);
+        });
     });
+} else {
+    console.error("Logout Button NOT FOUND! Check HTML ID 'menu-logout-btn'");
 }
 
 // --- ৬. ইউআরএল ভ্যালিডেশন ---
@@ -235,7 +273,7 @@ function loadUserNotes(uid) {
                 contentHTML += `<img src="${data.fileUrl}" loading="lazy" alt="Image" style="width:100%; border-radius: 8px; display:block;">`;
                 if(data.text) contentHTML += `<p class="note-text" style="margin-top:10px;">${escapeHtml(data.text)}</p>`;
             }
-            // B. লিংক
+            // B. লিংক (Enhanced Preview)
             else if (data.type === 'link') {
                 const previewId = `preview-${id}`;
                 contentHTML += `
@@ -265,7 +303,7 @@ function loadUserNotes(uid) {
     });
 }
 
-// --- ৮. লিংক প্রিভিউ ---
+// --- ৮. লিংক প্রিভিউ (UPDATED: More Details) ---
 async function fetchLinkPreview(url, elementId) {
     try {
         const response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`);
@@ -274,16 +312,25 @@ async function fetchLinkPreview(url, elementId) {
         const el = document.getElementById(elementId);
 
         if (el && result.status === 'success') {
+            // [UPDATED] ডেসক্রিপশন এবং পাবলিশার যোগ করা হয়েছে
+            const description = data.description 
+                ? `<p style="font-size: 12px; color: #666; margin: 5px 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${data.description}</p>` 
+                : '';
+            
+            const publisher = data.publisher || new URL(url).hostname;
+
             el.innerHTML = `
-                <a href="${url}" target="_blank" class="preview-card-link" style="text-decoration:none; color:inherit; display:block; border:1px solid #eee; border-radius:8px; overflow:hidden; background: var(--card-bg, #fff);">
-                    ${data.image ? `<div class="preview-img" style="height:120px; background-image: url('${data.image.url}'); background-size:cover; background-position:center;"></div>` : ''}
-                    <div class="preview-info" style="padding:10px;">
-                        <h4 class="preview-title" style="margin:0 0 5px 0; font-size:14px; font-weight:600;">${data.title || url}</h4>
+                <a href="${url}" target="_blank" class="preview-card-link" style="text-decoration:none; color:inherit; display:block; border:1px solid #ddd; border-radius:8px; overflow:hidden; background: var(--card-bg, #fff); transition: transform 0.2s;">
+                    ${data.image ? `<div class="preview-img" style="height:140px; background-image: url('${data.image.url}'); background-size:cover; background-position:center;"></div>` : ''}
+                    <div class="preview-info" style="padding:12px;">
+                        <h4 class="preview-title" style="margin:0 0 5px 0; font-size:15px; font-weight:600; line-height:1.3;">${data.title || url}</h4>
+                        ${description}
+                        <div style="font-size: 10px; color: #999; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.5px;">${publisher}</div>
                     </div>
                 </a>
             `;
         }
-    } catch (error) { console.log("Preview error"); }
+    } catch (error) { console.log("Preview error", error); }
 }
 
 function escapeHtml(text) {
