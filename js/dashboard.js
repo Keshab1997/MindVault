@@ -8,6 +8,9 @@ import { collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp,
 const CLOUDINARY_CLOUD_NAME = "dfi0mg8bb"; 
 const CLOUDINARY_PRESET = "i2tvy1m9";    
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+// 👇 তোমার আনলিমিটেড Cloudflare Worker URL
+const WORKER_URL = "https://royal-rain-33fa.keshabsarkar2018.workers.dev";
 // ============================================
 
 // স্পিনার স্টাইল
@@ -118,16 +121,25 @@ async function handleSharedContent(userId) {
 
     if (sharedRaw && sharedRaw.trim() !== "") {
         try {
-            const decodedContent = decodeURIComponent(sharedRaw).trim(); // Trim added
+            const decodedContent = decodeURIComponent(sharedRaw).trim();
             if(noteInput) noteInput.value = "Saving shared link...";
 
             let type = isValidURL(decodedContent) ? 'link' : 'text';
+            let linkMeta = {};
+
+            if (type === 'link') {
+                linkMeta = await getLinkPreviewData(decodedContent);
+            }
 
             await addDoc(collection(db, "notes"), {
                 uid: userId,
                 text: decodedContent,
                 type: type,
                 source: "android_share",
+                metaTitle: linkMeta.title || null,
+                metaDesc: linkMeta.description || null,
+                metaImg: linkMeta.image || null,
+                metaDomain: linkMeta.domain || null,
                 timestamp: serverTimestamp()
             });
 
@@ -140,25 +152,71 @@ async function handleSharedContent(userId) {
     }
 }
 
-// --- ৪. ম্যানুয়াল সেভ (Fix: Trim text to detect link correctly) ---
+// --- 🔥 নতুন আনলিমিটেড API ফাংশন (Cloudflare Worker) ---
+async function getLinkPreviewData(url) {
+    const cleanUrl = url.trim();
+    let metaData = {
+        title: null,
+        description: null,
+        image: null,
+        domain: null
+    };
+
+    try {
+        const urlObj = new URL(cleanUrl);
+        metaData.domain = urlObj.hostname;
+
+        // তোমার নতুন ওয়ার্কার কল করা হচ্ছে
+        const response = await fetch(`${WORKER_URL}?url=${encodeURIComponent(cleanUrl)}`);
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            const data = result.data;
+            metaData.title = data.title || cleanUrl;
+            metaData.description = data.description || "";
+            metaData.image = data.image || null;
+        } else {
+            throw new Error("Worker failed");
+        }
+    } catch (error) {
+        console.warn("Fetch error:", error);
+        // ফলব্যাক
+        if (cleanUrl.includes('facebook.com')) {
+            metaData.title = 'Facebook Post';
+        } else if (cleanUrl.includes('instagram.com')) {
+            metaData.title = 'Instagram Post';
+        } else if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
+            metaData.title = 'YouTube Video';
+        } else {
+            metaData.title = cleanUrl;
+        }
+    }
+    return metaData;
+}
+
+
+// --- ৪. ম্যানুয়াল সেভ ---
 if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
         const rawText = noteInput.value;
-        const text = rawText ? rawText.trim() : ""; // স্পেস রিমুভ করা হচ্ছে
+        const text = rawText ? rawText.trim() : "";
         const file = fileInput.files[0];
         const user = auth.currentUser;
 
         if (!text && !file) return alert("Please write something or select a file!");
 
         saveBtn.disabled = true;
-        saveBtn.innerText = "Uploading...";
-        if (statusText) statusText.style.display = 'block';
-
+        
         try {
             let fileUrl = null;
-            
-            // ছবি আপলোড
+            let type = 'text';
+            let linkMeta = {};
+
+            // ১. ছবি আপলোড লজিক
             if (file) {
+                saveBtn.innerText = "Uploading Image...";
+                if (statusText) statusText.style.display = 'block';
+
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('upload_preset', CLOUDINARY_PRESET); 
@@ -168,22 +226,29 @@ if (saveBtn) {
                 
                 const cloudData = await response.json();
                 fileUrl = cloudData.secure_url; 
-            }
-
-            // টাইপ নির্ধারণ (লিংক নাকি টেক্সট)
-            let type = 'text';
-            if (fileUrl) {
                 type = 'image';
-            } else if (isValidURL(text)) {
-                type = 'link'; // এখানে এখন সঠিকভাবে লিংক ডিটেক্ট হবে
+            } 
+            // ২. লিংক লজিক
+            else if (isValidURL(text)) {
+                type = 'link';
+                saveBtn.innerText = "Fetching Preview..."; 
+                if (statusText) statusText.style.display = 'block';
+                
+                // তোমার নতুন ওয়ার্কার থেকে ডাটা আনবে
+                linkMeta = await getLinkPreviewData(text);
             }
 
-            // ডাটাবেসে সেভ
+            // ৩. ডাটাবেসে সেভ
+            saveBtn.innerText = "Saving...";
             await addDoc(collection(db, "notes"), {
                 uid: user.uid,
-                text: text, // ক্লিন টেক্সট সেভ হবে
+                text: text,
                 fileUrl: fileUrl, 
                 type: type,
+                metaTitle: linkMeta.title || null,
+                metaDesc: linkMeta.description || null,
+                metaImg: linkMeta.image || null,
+                metaDomain: linkMeta.domain || null,
                 timestamp: serverTimestamp()
             });
 
@@ -216,10 +281,9 @@ if (logoutBtn) {
     });
 }
 
-// --- ৬. ইউআরএল ভ্যালিডেশন (Improved) ---
+// --- ৬. ইউআরএল ভ্যালিডেশন ---
 function isValidURL(string) {
     if(!string) return false;
-    // স্ট্রিং এর স্পেস কেটে চেক করা হবে
     const trimmedString = string.trim();
     try {
         const url = new URL(trimmedString);
@@ -245,10 +309,8 @@ function loadUserNotes(uid) {
             const card = document.createElement('div');
             card.className = 'note-card'; 
             
-            // টাইপ চেক
-            let cardType = data.type || 'text'; // ডিফল্ট টেক্সট
+            let cardType = data.type || 'text';
 
-            // যদি টাইপ টেক্সট হয়, কিন্তু দেখতে লিংকের মতো মনে হয় (পুরানো ডাটার জন্য)
             if (cardType === 'text' && isValidURL(data.text)) {
                 cardType = 'link';
             }
@@ -261,22 +323,30 @@ function loadUserNotes(uid) {
                 contentHTML += `<img src="${data.fileUrl}" loading="lazy" alt="Image" style="width:100%; border-radius: 8px; display:block;">`;
                 if(data.text) contentHTML += `<p class="note-text" style="margin-top:10px;">${escapeHtml(data.text)}</p>`;
             }
-            // B. লিংক (প্রিভিউ সহ)
+            // B. লিংক
             else if (cardType === 'link') {
-                const previewId = `preview-${id}`;
-                contentHTML += `
-                    <div id="${previewId}" class="link-preview-box">
-                        <div style="padding: 15px; border: 1px solid #f0f0f0; border-radius: 8px; background: #fafafa;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div class="loader-spin"></div>
-                                <span style="font-size: 13px; color: #777;">Loading...</span>
+                // নতুন ডাটা (ডাটাবেসে প্রিভিউ সেভ আছে)
+                if (data.metaTitle) {
+                    contentHTML += `
+                    <a href="${data.text}" target="_blank" style="text-decoration:none; color:inherit; display:block; border:1px solid #e0e0e0; border-radius:10px; overflow:hidden; background: #fff; transition: transform 0.2s;">
+                        ${data.metaImg ? `<div style="height:150px; background-image: url('${data.metaImg}'); background-size: cover; background-position: center;"></div>` : ''}
+                        <div style="padding:12px;">
+                            <h4 style="margin:0 0 5px 0; font-size:14px; color:#2c3e50; line-height:1.4;">${escapeHtml(data.metaTitle)}</h4>
+                            ${data.metaDesc ? `<div style="font-size:12px; color:#666; margin-bottom:8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${escapeHtml(data.metaDesc)}</div>` : ''}
+                            <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#999;">
+                                <span>🔗 ${escapeHtml(data.metaDomain || 'Link')}</span>
                             </div>
-                            <a href="${data.text}" target="_blank" class="raw-link note-text" style="margin-top:8px; display:block; font-size:12px; color:#007bff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8;">${escapeHtml(data.text)}</a>
                         </div>
-                    </div>
-                `;
-                // প্রিভিউ কল
-                setTimeout(() => fetchLinkPreview(data.text, previewId), 50);
+                    </a>
+                    <div style="margin-top:5px; font-size:11px; color:#aaa; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(data.text)}</div>
+                    `;
+                } 
+                // পুরনো ডাটা (এখনো রেন্ডার হবে কিন্তু API কল ছাড়া)
+                else {
+                    const previewId = `preview-${id}`;
+                    contentHTML += `<div id="${previewId}"></div>`;
+                    setTimeout(() => renderForcedPreview(data.text, document.getElementById(previewId)), 0);
+                }
             } 
             // C. টেক্সট
             else {
@@ -297,64 +367,16 @@ function loadUserNotes(uid) {
     });
 }
 
-// --- ৮. লিংক প্রিভিউ (Force Render Logic) ---
-async function fetchLinkPreview(url, elementId) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    
-    // URL ক্লিন করা (স্পেস থাকলে সমস্যা করে)
-    const cleanUrl = url.trim();
-
-    try {
-        const response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(cleanUrl)}`);
-        const result = await response.json();
-
-        if (result.status === 'success' && (result.data.title || result.data.image)) {
-            const data = result.data;
-            const title = data.title || cleanUrl;
-            const description = data.description || '';
-            const image = data.image ? data.image.url : null;
-            const logo = data.logo ? data.logo.url : null;
-            const publisher = data.publisher || new URL(cleanUrl).hostname;
-
-            let htmlContent = `
-                <a href="${cleanUrl}" target="_blank" style="text-decoration:none; color:inherit; display:block; border:1px solid #e0e0e0; border-radius:10px; overflow:hidden; background: #fff; transition: transform 0.2s;">
-            `;
-
-            if (image) {
-                htmlContent += `<div style="height:150px; background-image: url('${image}'); background-size: cover; background-position: center;"></div>`;
-            }
-
-            htmlContent += `
-                    <div style="padding:12px;">
-                        <h4 style="margin:0 0 5px 0; font-size:14px; color:#2c3e50; line-height:1.4;">${escapeHtml(title)}</h4>
-                        ${description ? `<div style="font-size:12px; color:#666; margin-bottom:8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${escapeHtml(description)}</div>` : ''}
-                        <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#999;">
-                            ${logo ? `<img src="${logo}" style="width:16px; height:16px; border-radius:50%;">` : '🔗'}
-                            <span>${escapeHtml(publisher)}</span>
-                        </div>
-                    </div>
-                </a>
-            `;
-            el.innerHTML = htmlContent;
-        } else {
-            throw new Error("API data empty");
-        }
-    } catch (error) {
-        // Fallback Logic (Force Render)
-        renderForcedPreview(cleanUrl, el);
-    }
-}
-
-// জোর করে প্রিভিউ রেন্ডার (Fallback)
+// --- ৮. ফলব্যাক রেন্ডারার (পুরনো নোটের জন্য) ---
 function renderForcedPreview(url, element) {
+    if(!element) return;
+    
     let brandColor = '#f0f2f5';
     let textColor = '#333';
     let iconHtml = '<span style="font-size:20px;">🔗</span>';
     let titleText = 'Visit Link';
-    
-    // হোস্টনেম বের করা (Error হ্যান্ডলিং সহ)
     let subText = "External Link";
+    
     try {
         subText = new URL(url).hostname;
     } catch(e) {
@@ -363,12 +385,12 @@ function renderForcedPreview(url, element) {
 
     if (url.includes('facebook.com')) {
         brandColor = '#1877F2'; textColor = '#fff'; iconHtml = '<span style="font-size:24px; font-weight:bold;">f</span>'; 
-        titleText = 'Facebook Post'; subText = 'Click to view on Facebook';
+        titleText = 'Facebook Post'; subText = 'View on Facebook';
     } 
     else if (url.includes('instagram.com')) {
         brandColor = 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)'; 
         textColor = '#fff'; iconHtml = '<span style="font-size:24px;">📷</span>'; 
-        titleText = 'Instagram Post'; subText = 'Click to view on Instagram';
+        titleText = 'Instagram Post'; subText = 'View on Instagram';
     }
     else if (url.includes('youtube.com') || url.includes('youtu.be')) {
         brandColor = '#FF0000'; textColor = '#fff'; iconHtml = '<span style="font-size:24px;">▶️</span>'; 
@@ -376,7 +398,7 @@ function renderForcedPreview(url, element) {
     }
 
     element.innerHTML = `
-        <a href="${url}" target="_blank" style="text-decoration:none; display:flex; align-items:center; gap:15px; padding:15px; border-radius:12px; background: ${brandColor}; color: ${textColor}; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <a href="${url}" target="_blank" style="text-decoration:none; display:flex; align-items:center; gap:15px; padding:15px; border-radius:12px; background: ${brandColor}; color: ${textColor}; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;">
             <div style="width:45px; height:45px; background:rgba(255,255,255,0.25); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                 ${iconHtml}
             </div>
