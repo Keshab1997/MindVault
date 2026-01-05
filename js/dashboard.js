@@ -10,7 +10,7 @@ const CLOUDINARY_PRESET = "i2tvy1m9";
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 // ============================================
 
-// স্পিনার স্টাইল ইনজেকশন (যাতে CSS ফাইল এডিট করা না লাগে)
+// স্পিনার স্টাইল ইনজেকশন (CSS ফাইল এডিট না করার জন্য)
 const style = document.createElement('style');
 style.innerHTML = `
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -286,8 +286,8 @@ function loadUserNotes(uid) {
                         </div>
                     </div>
                 `;
-                // প্রিভিউ লোড শুরু
-                fetchLinkPreview(data.text, previewId);
+                // প্রিভিউ লোড শুরু (একটু সময় নিয়ে কল করা যাতে UI আটকে না যায়)
+                setTimeout(() => fetchLinkPreview(data.text, previewId), 100);
             } 
             // C. টেক্সট কার্ড
             else {
@@ -314,110 +314,92 @@ async function fetchLinkPreview(url, elementId) {
     if (!el) return;
 
     try {
-        // ১. সোশ্যাল মিডিয়া ডিটেকশন
-        const isFacebook = url.includes('facebook.com');
-        const isInstagram = url.includes('instagram.com');
-        const isTiktok = url.includes('tiktok.com');
-        const isSocial = isFacebook || isInstagram || isTiktok;
-
-        // ২. API URL তৈরি (meta=true দেওয়া জরুরি)
-        let apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(url)}`;
+        // ১. Microlink API সেটআপ
+        const apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(url)}`;
         
-        if (isSocial) {
-            // Social Media হলে screenshot এবং meta দুটোই চাই
-            apiUrl += "&screenshot=true&meta=true&prefer-color-scheme=light"; 
-        }
-
         const response = await fetch(apiUrl);
         const result = await response.json();
-        const data = result.data;
-
-        if (result.status === 'success') {
-            // ৩. সফল হলে প্রিভিউ কার্ড তৈরি
-            let imageUrl = '';
-            let imageStyle = 'background-size: cover; background-position: center;';
-
-            if (isSocial && data.screenshot) {
-                imageUrl = data.screenshot.url;
-                imageStyle = 'background-size: cover; background-position: center top;'; // Top position for social
-            } else if (data.image) {
-                imageUrl = data.image.url;
-            }
-
+        
+        // যদি সফল হয় এবং ডাটা থাকে
+        if (result.status === 'success' && result.data) {
+            const data = result.data;
             const title = data.title || url;
-            const description = data.description 
-                ? `<p style="font-size: 12px; color: #666; margin: 5px 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${data.description}</p>` 
-                : '';
-            
+            const description = data.description || '';
+            const image = data.image ? data.image.url : null;
+            const logo = data.logo ? data.logo.url : null;
             const publisher = data.publisher || new URL(url).hostname;
 
-            el.innerHTML = `
-                <a href="${url}" target="_blank" class="preview-card-link" style="text-decoration:none; color:inherit; display:block; border:1px solid #e0e0e0; border-radius:10px; overflow:hidden; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.2s;">
-                    ${imageUrl ? `<div class="preview-img" style="height:150px; background-image: url('${imageUrl}'); ${imageStyle}"></div>` : ''}
-                    <div class="preview-info" style="padding:12px;">
-                        <h4 class="preview-title" style="margin:0 0 5px 0; font-size:14px; font-weight:700; line-height:1.4; color: #333;">${title}</h4>
-                        ${description}
-                        <div style="font-size: 11px; color: #888; margin-top: 8px; font-weight:500; display:flex; align-items:center; gap:6px;">
-                            ${data.logo ? `<img src="${data.logo.url}" style="width:14px; height:14px; border-radius:3px;">` : '🔗'}
-                            ${publisher}
+            let htmlContent = `
+                <a href="${url}" target="_blank" style="text-decoration:none; color:inherit; display:block; border:1px solid #eee; border-radius:8px; overflow:hidden; background: #fff;">
+            `;
+
+            // ইমেজ থাকলে দেখাবে
+            if (image) {
+                htmlContent += `
+                    <div style="height:140px; background-image: url('${image}'); background-size: cover; background-position: center;"></div>
+                `;
+            }
+
+            htmlContent += `
+                    <div style="padding:10px;">
+                        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333; line-height:1.4;">${escapeHtml(title)}</h4>
+                        ${description ? `<div style="font-size:12px; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:5px;">${escapeHtml(description)}</div>` : ''}
+                        
+                        <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#999;">
+                            ${logo ? `<img src="${logo}" style="width:14px; height:14px; border-radius:2px;">` : '🔗'}
+                            <span>${escapeHtml(publisher)}</span>
                         </div>
                     </div>
                 </a>
             `;
+
+            el.innerHTML = htmlContent;
+
         } else {
-            throw new Error("Preview data missing");
+            // API কাজ না করলে বা ডাটা না পেলে Fallback View দেখাবে
+            throw new Error("No preview data");
         }
 
     } catch (error) {
-        console.log("Rendering Fallback Card for:", url);
+        console.warn("Preview failed, showing fallback for:", url);
         
-        // ৪. ফলব্যাক ডিজাইন (সুন্দর কালারফুল কার্ড)
-        let icon = '🔗';
-        let titleText = 'Visit Link';
-        let brandColor = '#f0f0f0'; // Default gray
+        // --- ফালব্যাক ডিজাইন (Fallback Design) ---
+        // সোশ্যাল মিডিয়ার জন্য স্পেশাল কালার
+        let brandColor = '#f8f9fa';
         let textColor = '#333';
-        let brandName = 'Website';
+        let iconHtml = '🔗';
+        let siteName = 'Website';
+        let subText = 'Click to open link';
 
-        // ব্র্যান্ড অনুযায়ী কালার সেট করা
         if (url.includes('facebook.com')) {
-            icon = '<span style="font-size:24px; font-weight:bold;">f</span>'; 
-            brandColor = '#1877F2';
-            textColor = '#fff';
-            titleText = 'View on Facebook';
-            brandName = 'Facebook';
+            brandColor = '#1877F2'; textColor = '#fff'; iconHtml = '<b>f</b>'; siteName = 'Facebook'; subText = 'View on Facebook';
         } else if (url.includes('instagram.com')) {
-            icon = '<span style="font-size:24px;">📷</span>';
-            brandColor = 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)';
-            textColor = '#fff';
-            titleText = 'View on Instagram';
-            brandName = 'Instagram';
+            brandColor = 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)'; 
+            textColor = '#fff'; iconHtml = '📷'; siteName = 'Instagram'; subText = 'View on Instagram';
         } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
-            icon = '<span style="font-size:24px;">▶️</span>';
-            brandColor = '#FF0000';
-            textColor = '#fff';
-            titleText = 'Watch on YouTube';
-            brandName = 'YouTube';
+            brandColor = '#FF0000'; textColor = '#fff'; iconHtml = '▶️'; siteName = 'YouTube'; subText = 'Watch Video';
         }
 
-        // Fallback UI রেন্ডার
+        // Fallback UI রেন্ডার করা (broken image বা error ছাড়া)
         el.innerHTML = `
-            <a href="${url}" target="_blank" style="text-decoration:none; display:flex; align-items:center; gap:12px; padding:12px; border-radius:10px; background: ${brandColor.includes('gradient') ? brandColor : brandColor}; color: ${textColor}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <div style="background: rgba(255,255,255,0.2); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                    ${icon}
+            <a href="${url}" target="_blank" style="text-decoration:none; display:flex; align-items:center; gap:12px; padding:12px; border-radius:8px; background: ${brandColor}; color: ${textColor}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="width:36px; height:36px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px;">
+                    ${iconHtml}
                 </div>
-                <div style="flex:1; overflow:hidden;">
-                    <h4 style="margin:0; font-size:14px; font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${titleText}</h4>
-                    <small style="opacity: 0.9; font-size: 11px;">${brandName} • Click to open</small>
+                <div style="overflow:hidden;">
+                    <div style="font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${subText}</div>
+                    <div style="font-size:11px; opacity:0.9;">${siteName}</div>
                 </div>
-                <div style="font-size:18px; opacity:0.8;">↗</div>
+                <div style="margin-left:auto; font-size:18px; opacity:0.8;">↗</div>
             </a>
-            <div style="margin-top:4px; font-size:10px; color:#999; padding-left:5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${url}</div>
+            <div style="margin-top:4px; font-size:10px; color:#aaa; padding-left:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${url}</div>
         `;
     }
 }
 
+// HTML ক্যারেক্টার এস্কেপ
 function escapeHtml(text) {
-    if (!text) return text;
+    if (!text) return "";
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
@@ -428,7 +410,7 @@ window.deleteNote = async (id) => {
             await deleteDoc(doc(db, "notes", id));
         } catch (error) {
             console.error("Delete failed:", error);
-            alert("Delete failed!");
+            alert("Delete failed! Check console.");
         }
     }
 };
