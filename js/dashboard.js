@@ -11,13 +11,45 @@ const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}
 const WORKER_URL = "https://royal-rain-33fa.keshabsarkar2018.workers.dev";
 // ============================================
 
-// স্টাইল ইনজেকশন (স্পিনার ও একটিভ বাটন)
+// স্টাইল ইনজেকশন (স্পিনার, একটিভ বাটন এবং রিডিং মোডাল)
 const style = document.createElement('style');
 style.innerHTML = `
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   .loader-spin { animation: spin 1s linear infinite; border: 2px solid #ddd; border-top: 2px solid #007bff; border-radius: 50%; width: 16px; height: 16px; display: inline-block; }
   .filter-btn.active { background-color: #007bff !important; color: white !important; border-color: #007bff; }
   .folder-chip.active { background-color: #007bff !important; color: white !important; border: 1px solid #007bff; }
+  .view-btn.active { background-color: #1877f2; color: white; border-color: #1877f2; }
+
+  /* 👇 রিডিং মোডাল স্টাইল (Reading Mode) */
+  .read-modal-overlay {
+      display: none; 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.6); z-index: 2000;
+      justify-content: center; align-items: center;
+      backdrop-filter: blur(5px);
+  }
+  .read-modal-paper {
+      background: #fff; width: 90%; max-width: 700px; height: 85vh;
+      border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      display: flex; flex-direction: column; overflow: hidden;
+      position: relative; animation: slideUp 0.3s ease-out;
+  }
+  @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  
+  .read-header {
+      padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9;
+  }
+  .read-meta { font-size: 12px; color: #666; display: flex; gap: 10px; align-items: center; }
+  .read-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .read-close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #555; }
+  
+  .read-content {
+      padding: 30px; overflow-y: auto; font-family: 'Georgia', serif; /* বইয়ের মতো ফন্ট */
+      font-size: 18px; line-height: 1.8; color: #2d2d2d; flex: 1;
+  }
+  .read-content img { max-width: 100%; border-radius: 8px; margin: 15px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  .read-content a { color: #007bff; text-decoration: underline; }
+  .read-content blockquote { border-left: 4px solid #007bff; padding-left: 15px; color: #555; font-style: italic; margin: 20px 0; }
 `;
 document.head.appendChild(style);
 
@@ -40,17 +72,28 @@ const createFolderBtn = document.getElementById('createFolderBtn');
 const customFolderList = document.getElementById('custom-folder-list');
 const folderSelect = document.getElementById('folderSelect');
 const contentGrid = document.getElementById('content-grid');
+const gridViewBtn = document.getElementById('gridViewBtn');
+const listViewBtn = document.getElementById('listViewBtn');
 
-// প্রিভিউ এবং মোডাল
+// প্রিভিউ, এডিট এবং রিডিং মোডাল
 const previewContainer = document.getElementById('image-preview-container');
 const previewImage = document.getElementById('image-preview');
 const removeImageBtn = document.getElementById('remove-image-btn');
 const triggerFile = document.getElementById('triggerFile');
+
+// এডিট মোডাল
 const editModal = document.getElementById('editModal');
 const editNoteInput = document.getElementById('editNoteInput');
 const updateNoteBtn = document.getElementById('updateNoteBtn');
 const closeModalBtn = document.querySelector('.close-modal');
 const contextMenu = document.getElementById('contextMenu');
+
+// 👇 নতুন: রিডিং মোডাল এলিমেন্টস (HTML এ এগুলো যোগ করতে হবে)
+const readModal = document.getElementById('readModal');
+const readModalContent = document.getElementById('readModalContent'); 
+const readModalDate = document.getElementById('readModalDate');
+const readModalFolder = document.getElementById('readModalFolder');
+const closeReadModalBtn = document.getElementById('closeReadModalBtn');
 
 // --- ১. অথেনটিকেশন ---
 onAuthStateChanged(auth, (user) => {
@@ -116,9 +159,6 @@ function loadUserFolders(uid) {
                 const delIcon = document.createElement('span');
                 delIcon.className = 'folder-delete-btn';
                 delIcon.innerHTML = '×';
-                delIcon.style.marginLeft = "8px";
-                delIcon.style.color = "red";
-                delIcon.style.cursor = "pointer";
                 
                 delIcon.onclick = (e) => {
                     e.stopPropagation(); 
@@ -186,9 +226,44 @@ async function deleteCustomFolder(folderId, folderName) {
     } catch (e) { alert("Delete failed"); }
 }
 
+// ==================================================
+// 🔍 ৩. সার্চ এবং ভিউ লজিক
+// ==================================================
+
+// সার্চ ফাংশন
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        const searchText = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.note-card');
+
+        cards.forEach(card => {
+            const textContent = card.innerText.toLowerCase();
+            if (textContent.includes(searchText)) {
+                card.style.display = 'inline-block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+}
+
+// গ্রিড এবং লিস্ট ভিউ টগল
+if(gridViewBtn && listViewBtn) {
+    gridViewBtn.addEventListener('click', () => {
+        contentGrid.classList.remove('list-view');
+        gridViewBtn.classList.add('active');
+        listViewBtn.classList.remove('active');
+    });
+
+    listViewBtn.addEventListener('click', () => {
+        contentGrid.classList.add('list-view');
+        listViewBtn.classList.add('active');
+        gridViewBtn.classList.remove('active');
+    });
+}
 
 // ==================================================
-// 📝 ৩. নোট ম্যানেজমেন্ট (Load & Save)
+// 📝 ৪. নোট ম্যানেজমেন্ট (Load & Save)
 // ==================================================
 
 function loadUserNotes(uid, filterType = 'All', filterValue = null) {
@@ -231,6 +306,9 @@ function loadUserNotes(uid, filterType = 'All', filterValue = null) {
             const card = createNoteCard(docSnap);
             contentGrid.appendChild(card);
         });
+
+        // যদি সার্চ বক্সে কিছু লেখা থাকে তবে ফিল্টার আবার চালাও
+        if(searchInput && searchInput.value) searchInput.dispatchEvent(new Event('input'));
 
         // Drag & Drop
         if (typeof Sortable !== 'undefined') {
@@ -326,7 +404,10 @@ if (saveBtn) {
     });
 }
 
-// --- কার্ড UI ---
+// ==================================================
+// 🎨 ৫. কার্ড জেনারেটর (Updated with Reading Modal)
+// ==================================================
+
 function createNoteCard(docSnap) {
     const data = docSnap.data();
     const id = docSnap.id;
@@ -350,10 +431,15 @@ function createNoteCard(docSnap) {
     }
 
     let contentHTML = '';
+
+    // A. Image Logic
     if (data.type === 'image') {
         contentHTML += `<img src="${data.fileUrl}" loading="lazy" style="width:100%; border-radius: 8px; display:block; margin-bottom:5px;">`;
-        if(data.text) contentHTML += `<div class="note-text">${marked.parse(data.text)}</div>`;
+        if(data.text) {
+            contentHTML += generateTextHTML(data.text);
+        }
     }
+    // B. Link Logic
     else if (data.type === 'link' && data.metaTitle) {
         contentHTML += `
         <a href="${data.text}" target="_blank" style="text-decoration:none; color:inherit; display:block; border:1px solid rgba(0,0,0,0.1); border-radius:10px; overflow:hidden; background: rgba(255,255,255,0.5);">
@@ -364,8 +450,9 @@ function createNoteCard(docSnap) {
             </div>
         </a>`;
     } 
+    // C. Text Logic
     else {
-        contentHTML += `<div class="note-text">${marked.parse(data.text || '')}</div>`;
+        contentHTML += generateTextHTML(data.text || '');
     }
 
     contentHTML += `
@@ -376,6 +463,17 @@ function createNoteCard(docSnap) {
     `;
 
     card.innerHTML += contentHTML; 
+
+    // 👇 নতুন: Read More ইভেন্ট লিসেনার (মোডাল ওপেন করবে)
+    const readMoreBtn = card.querySelector('.read-more-btn');
+    if (readMoreBtn) {
+        readMoreBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // কার্ডের অন্য ক্লিক ইভেন্ট বন্ধ করতে
+            openReadModal(data, id);
+        });
+    }
+
+    // কার্ডে রাইট ক্লিক মেনু
     card.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         window.openContextMenu(e, id);
@@ -383,7 +481,84 @@ function createNoteCard(docSnap) {
     return card;
 }
 
-// --- কনটেক্সট মেনু ---
+// টেক্সট জেনারেটর (Read More বাটন সহ)
+function generateTextHTML(text) {
+    if (!text) return "";
+    
+    // Markdown পার্সিং
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = marked.parse(text);
+    const plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+    const isLongText = plainText.length > 250; // ২৫০ অক্ষরের বেশি হলে কাটবে
+
+    if (isLongText) {
+        // এখানে শুধু অল্প টেক্সট দেখাবো
+        const shortText = plainText.substring(0, 250) + "...";
+        return `
+            <div class="note-text">${shortText}</div>
+            <button class="read-more-btn" style="color:#007bff; border:none; background:none; padding:0; cursor:pointer; font-size:13px; margin-top:5px;">Read More...</button>
+        `;
+    } else {
+        return `<div class="note-text">${marked.parse(text)}</div>`;
+    }
+}
+
+// ==================================================
+// 📖 ৬. রিডিং মোডাল ফাংশন (NEW)
+// ==================================================
+function openReadModal(data, id) {
+    if(!readModal || !readModalContent) return;
+
+    // ১. ডেট এবং ফোল্ডার সেট করা
+    if(readModalDate) readModalDate.innerText = data.timestamp?.toDate().toLocaleString() || '';
+    if(readModalFolder) {
+        readModalFolder.style.display = data.folder ? 'inline-block' : 'none';
+        readModalFolder.innerText = data.folder || '';
+    }
+
+    // ২. মেইন কন্টেন্ট তৈরি
+    let html = '';
+
+    // ছবি থাকলে উপরে দেখাবো
+    if (data.type === 'image' && data.fileUrl) {
+        html += `<img src="${data.fileUrl}" alt="Note Image">`;
+    }
+
+    // লিংক থাকলে সুন্দর করে দেখাবো
+    if (data.type === 'link') {
+        html += `
+        <div style="background:#f0f2f5; padding:15px; border-radius:8px; margin-bottom:20px; border-left: 4px solid #007bff;">
+            <a href="${data.text}" target="_blank" style="font-size:18px; font-weight:bold;">${data.metaTitle || data.text}</a>
+            <p style="margin:5px 0 0 0; color:#666;">${data.metaDesc || ''}</p>
+        </div>`;
+    }
+
+    // টেক্সট (Markdown রেন্ডার করে)
+    if (data.text) {
+        html += marked.parse(data.text);
+    }
+
+    readModalContent.innerHTML = html;
+    readModal.style.display = 'flex'; // মোডাল শো
+}
+
+// মোডাল বন্ধ করার লজিক
+if(closeReadModalBtn) {
+    closeReadModalBtn.addEventListener('click', () => {
+        readModal.style.display = 'none';
+    });
+}
+// মোডালের বাইরে ক্লিক করলে বন্ধ হবে
+if(readModal) {
+    readModal.addEventListener('click', (e) => {
+        if(e.target === readModal) {
+            readModal.style.display = 'none';
+        }
+    });
+}
+
+// --- ৭. কনটেক্সট মেনু ---
 window.openContextMenu = async (e, id) => {
     e.stopPropagation();
     currentEditId = id;
@@ -395,6 +570,7 @@ window.openContextMenu = async (e, id) => {
 
         let x = e.pageX;
         let y = e.pageY;
+        // মোবাইল ফিক্স
         if(e.type === 'click') {
            const rect = e.target.getBoundingClientRect();
            x = rect.left - 100;
@@ -414,7 +590,7 @@ window.openContextMenu = async (e, id) => {
     }
 };
 
-// --- ইউটিলিটি ---
+// --- ৮. ইউটিলিটি ফাংশন ---
 if(updateNoteBtn) updateNoteBtn.onclick = async () => {
     if(currentEditId) await updateDoc(doc(db, "notes", currentEditId), { text: editNoteInput.value });
     editModal.style.display = 'none';
@@ -448,13 +624,11 @@ async function handleSharedContent(uid) {
 
 if (logoutBtn) logoutBtn.onclick = () => signOut(auth).then(() => window.location.href = "index.html");
 
-// ⚡ এই অংশটি আপডেট করা হয়েছে যাতে External JS এর সাথে কনফ্লিক্ট না হয়
+// উইন্ডো ক্লিক ইভেন্ট
 window.addEventListener('click', (e) => {
-    // কনটেক্সট মেনু বন্ধ করা
     if(contextMenu && !contextMenu.contains(e.target) && !e.target.classList.contains('delete-btn')) {
         contextMenu.style.display = 'none';
     }
-    // এডিট মোডাল বন্ধ করা
     if(e.target == editModal) {
         editModal.style.display = 'none';
     }
