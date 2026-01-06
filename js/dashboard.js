@@ -23,6 +23,8 @@ document.head.appendChild(style);
 
 // DOM এলিমেন্টস
 let unsubscribeNotes = null;
+// অ্যাপ থেকে শেয়ার করা ছবি রাখার ভেরিয়েবল
+let androidSharedImage = null; 
 
 const logoutBtn = document.getElementById('menu-logout-btn'); 
 const saveBtn = document.getElementById('saveBtn');
@@ -39,6 +41,26 @@ const removeImageBtn = document.getElementById('remove-image-btn');
 // আইকন ট্রিগার
 const triggerFile = document.getElementById('triggerFile');
 const triggerLink = document.getElementById('triggerLink');
+
+// --- [নতুন] অ্যান্ড্রয়েড অ্যাপ কানেকশন ---
+// অ্যাপ থেকে এই ফাংশনটি কল করা হবে
+window.receiveImageFromApp = function(base64Data) {
+    if (base64Data) {
+        androidSharedImage = base64Data; // ডাটা স্টোর করা হলো
+        
+        // প্রিভিউ দেখানো
+        if (previewImage && previewContainer) {
+            previewImage.src = base64Data;
+            previewContainer.style.display = 'block';
+            
+            if(statusText) {
+                statusText.innerText = "Image received from App! Click Save.";
+                statusText.style.display = 'block';
+                statusText.style.color = "green";
+            }
+        }
+    }
+};
 
 // --- ১. UI ইভেন্ট লিসেনার ---
 
@@ -64,11 +86,14 @@ if(triggerFile && fileInput) {
     triggerFile.addEventListener('click', () => fileInput.click());
 }
 
-// ফাইল প্রিভিউ
+// ফাইল প্রিভিউ (ওয়েবসাইট থেকে ম্যানুয়াল আপলোড)
 if(fileInput) {
     fileInput.addEventListener('change', () => {
         const file = fileInput.files[0];
         if(file) {
+            // যদি আগে অ্যাপ থেকে ছবি এসে থাকে, তা সরিয়ে দেওয়া হবে
+            androidSharedImage = null; 
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 previewImage.src = e.target.result;
@@ -114,18 +139,17 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- HELPER: URL Fixer (FIXED) ---
+// --- HELPER: URL Fixer ---
 function normalizeUrl(input) {
     if (!input) return "";
     let url = input.trim();
-    // যদি http/https না থাকে কিন্তু ডোমেইনের মতো দেখতে হয়
     if (url && !url.startsWith('http://') && !url.startsWith('https://') && url.includes('.') && !url.includes(' ')) {
         return 'https://' + url;
     }
     return url;
 }
 
-// --- ৩. অটো সেভ (Android Share - Optimized) ---
+// --- ৩. অটো সেভ (Android Text Share) ---
 async function handleSharedContent(userId) {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedRaw = urlParams.get('note') || urlParams.get('text');
@@ -133,8 +157,6 @@ async function handleSharedContent(userId) {
     if (sharedRaw && sharedRaw.trim() !== "") {
         try {
             let decodedContent = decodeURIComponent(sharedRaw).trim();
-            
-            // 👇 FIX: লিঙ্ক হলে অটোমেটিক https বসাবে
             decodedContent = normalizeUrl(decodedContent);
 
             if(noteInput) noteInput.value = "Saving...";
@@ -180,7 +202,7 @@ async function handleSharedContent(userId) {
     }
 }
 
-// --- 🔥 নতুন আনলিমিটেড API ফাংশন (Cloudflare Worker) ---
+// --- 🔥 Cloudflare Worker API ---
 async function getLinkPreviewData(url) {
     const cleanUrl = url.trim();
     let metaData = {
@@ -221,16 +243,16 @@ async function getLinkPreviewData(url) {
 }
 
 
-// --- ৪. ম্যানুয়াল সেভ (FIXED) ---
+// --- ৪. ম্যানুয়াল সেভ (Android Image Support Added) ---
 if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
         const rawText = noteInput.value;
         const file = fileInput.files[0];
         const user = auth.currentUser;
 
-        if (!rawText && !file) return alert("Please write something or select a file!");
+        // চেক করা হচ্ছে কিছু আছে কিনা (Text, File অথবা Android Shared Image)
+        if (!rawText && !file && !androidSharedImage) return alert("Please write something or select a file!");
 
-        // 👇 FIX: এখানেও অটোমেটিক https বসাবে
         const text = normalizeUrl(rawText);
 
         saveBtn.disabled = true;
@@ -241,12 +263,20 @@ if (saveBtn) {
             let linkMeta = {};
 
             // ১. ছবি আপলোড লজিক
-            if (file) {
+            if (file || androidSharedImage) {
                 saveBtn.innerText = "Uploading Image...";
                 if (statusText) statusText.style.display = 'block';
 
                 const formData = new FormData();
-                formData.append('file', file);
+                
+                if (file) {
+                    // সাধারণ ফাইল আপলোড
+                    formData.append('file', file);
+                } else if (androidSharedImage) {
+                    // অ্যান্ড্রয়েড থেকে আসা Base64 ছবি আপলোড
+                    formData.append('file', androidSharedImage);
+                }
+                
                 formData.append('upload_preset', CLOUDINARY_PRESET); 
 
                 const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
@@ -269,7 +299,7 @@ if (saveBtn) {
             saveBtn.innerText = "Saving...";
             await addDoc(collection(db, "notes"), {
                 uid: user.uid,
-                text: text, // Normalized text (with https)
+                text: text, 
                 fileUrl: fileUrl, 
                 type: type,
                 metaTitle: linkMeta.title || null,
@@ -296,9 +326,11 @@ if (saveBtn) {
 
 function clearFileInput() {
     fileInput.value = ""; 
+    androidSharedImage = null; // শেয়ার করা ছবি ক্লিয়ার
     if(previewContainer) previewContainer.style.display = 'none'; 
     if(previewImage) previewImage.src = ""; 
     if(triggerFile) triggerFile.style.color = ""; 
+    if(statusText) statusText.style.display = 'none';
 }
 
 // --- ৫. লগআউট ---
@@ -353,7 +385,6 @@ function loadUserNotes(uid) {
             }
             // B. লিংক
             else if (cardType === 'link') {
-                // ১. যদি মেটাডাটা থাকে
                 if (data.metaTitle) {
                     contentHTML += `
                     <a href="${data.text}" target="_blank" rel="noopener noreferrer" style="text-decoration:none; color:inherit; display:block; border:1px solid #e0e0e0; border-radius:10px; overflow:hidden; background: #fff; transition: transform 0.2s;">
@@ -368,9 +399,7 @@ function loadUserNotes(uid) {
                     </a>
                     <div style="margin-top:5px; font-size:11px; color:#aaa; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(data.text)}</div>
                     `;
-                } 
-                // ২. লোডিং স্টেট
-                else if (data.isLoadingMeta) {
+                } else if (data.isLoadingMeta) {
                     contentHTML += `
                         <div style="padding: 15px; background: #f9f9f9; border-radius: 10px; border: 1px dashed #ccc; display:flex; align-items:center; gap:10px;">
                             <div class="loader-spin"></div>
@@ -378,9 +407,7 @@ function loadUserNotes(uid) {
                         </div>
                         <div style="margin-top:5px; font-size:11px; color:#aaa;">${escapeHtml(data.text)}</div>
                     `;
-                }
-                // ৩. ফলব্যাক
-                else {
+                } else {
                     const previewId = `preview-${id}`;
                     contentHTML += `<div id="${previewId}"></div>`;
                     setTimeout(() => renderForcedPreview(data.text, document.getElementById(previewId)), 0);
