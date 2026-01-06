@@ -14,10 +14,10 @@ const WORKER_URL = "https://royal-rain-33fa.keshabsarkar2018.workers.dev";
 // --- গ্লোবাল ভেরিয়েবল ---
 let unsubscribeNotes = null;
 let unsubscribeFolders = null; 
-let unsubscribeTrashCount = null; // নতুন: ট্র্যাশ কাউন্টের জন্য
+let unsubscribeTrashCount = null;
 let androidSharedImage = null; 
 let currentEditId = null; 
-let currentViewType = 'all'; // বর্তমানে কোন ভিউতে আছি
+let currentViewType = 'all';
 
 // --- DOM এলিমেন্টস ---
 const logoutBtn = document.getElementById('menu-logout-btn'); 
@@ -34,7 +34,7 @@ const folderSelect = document.getElementById('folderSelect');
 const contentGrid = document.getElementById('content-grid');
 const gridViewBtn = document.getElementById('gridViewBtn');
 const listViewBtn = document.getElementById('listViewBtn');
-const trashFilterBtn = document.querySelector('.filter-btn[data-filter="trash"]'); // ট্র্যাশ বাটন
+const trashFilterBtn = document.querySelector('.filter-btn[data-filter="trash"]'); 
 
 // প্রিভিউ, এডিট এবং রিডিং মোডাল
 const previewContainer = document.getElementById('image-preview-container');
@@ -54,6 +54,7 @@ const readModalContent = document.getElementById('readModalContent');
 const readModalDate = document.getElementById('readModalDate');
 const readModalFolder = document.getElementById('readModalFolder');
 const closeReadModalBtn = document.getElementById('closeReadModalBtn');
+const closeModalBtn = document.querySelector('.close-modal'); // জেনেরিক ক্লোজ বাটন
 
 // শেয়ার মোডাল এলিমেন্টস
 const shareModal = document.getElementById('shareModal');
@@ -66,14 +67,16 @@ onAuthStateChanged(auth, (user) => {
     } else {
         // ইউজার লগইন হলে এই ফাংশনগুলো কল হবে
         loadUserFolders(user.uid);
-        trackTrashCount(user.uid); // নতুন: ট্র্যাশ কাউন্ট ট্র্যাকার
+        trackTrashCount(user.uid); 
         
         // ডিফল্টভাবে 'All' একটিভ থাকবে
         const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
         if(allBtn) allBtn.classList.add('active');
         
         loadUserNotes(user.uid, 'All');
-        handleSharedContent(user.uid); // শেয়ার করা কন্টেন্ট হ্যান্ডেল করা
+        
+        // 👇 শেয়ার করা কন্টেন্ট হ্যান্ডেল করা (সব লোড হওয়ার পর)
+        handleSharedContent(user.uid); 
         
         // প্রোফাইল UI আপডেট
         const navUserName = document.getElementById('nav-user-name');
@@ -86,7 +89,43 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ==================================================
-// 🗑️ ২. ট্র্যাশ ম্যানেজমেন্ট (NEW FEATURES)
+// 📥 শেয়ার হ্যান্ডলার (Mobile Share Target - UPDATED)
+// ==================================================
+function handleSharedContent(uid) {
+    // URL থেকে প্যারামিটার ধরা (manifest.json এর params অনুযায়ী)
+    const p = new URLSearchParams(window.location.search);
+    const title = p.get('title');
+    const text = p.get('text');
+    const url = p.get('url');
+
+    let sharedContent = "";
+
+    // লজিক: সোশ্যাল মিডিয়া সাধারণত title এবং text/url পাঠায়
+    if (title) sharedContent += `**${title}**\n`; // টাইটেল বোল্ড করে দিলাম
+    if (text) sharedContent += text + "\n";
+    if (url) sharedContent += url;
+
+    // যদি শেয়ার করা কন্টেন্ট থাকে
+    if(sharedContent.trim()) {
+        console.log("Shared Content Received:", sharedContent);
+        
+        // ইনপুট বক্সে সেট করে দাও
+        if(noteInput) {
+            noteInput.value = sharedContent.trim();
+            noteInput.focus(); // ফোকাস যাতে ইউজার দেখে
+            
+            // অটোমেটিক হাইট এডজাস্টমেন্ট (যদি থাকে)
+            noteInput.style.height = 'auto';
+            noteInput.style.height = noteInput.scrollHeight + 'px';
+        }
+
+        // URL ক্লিন করা (যাতে রিফ্রেশ দিলে আবার লেখাটা না আসে)
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+// ==================================================
+// 🗑️ ২. ট্র্যাশ ম্যানেজমেন্ট
 // ==================================================
 
 // A. রিয়েল-টাইম ট্র্যাশ কাউন্ট
@@ -97,27 +136,25 @@ function trackTrashCount(uid) {
 
     unsubscribeTrashCount = onSnapshot(q, (snapshot) => {
         const count = snapshot.size;
-        // ট্র্যাশ বাটনের টেক্সট আপডেট করা
         if(trashFilterBtn) {
             trashFilterBtn.innerHTML = `🗑️ Trash ${count > 0 ? `(${count})` : ''}`;
         }
     });
 }
 
-// B. নোট রিকভার করা (Restore)
+// B. নোট রিকভার করা
 window.restoreNote = async (id) => {
     try {
         await updateDoc(doc(db, "notes", id), { 
             status: 'active',
-            timestamp: serverTimestamp() // রিকভার করার সময় টাইম আপডেট হবে যাতে উপরে আসে
+            timestamp: serverTimestamp() 
         });
-        // ইউজারকে ফিডব্যাক দেওয়া যেতে পারে (Toast notification)
     } catch (error) {
         alert("Error restoring note: " + error.message);
     }
 };
 
-// C. পার্মানেন্ট ডিলিট (Delete Forever)
+// C. পার্মানেন্ট ডিলিট
 window.deleteForever = async (id) => {
     if(confirm("Are you sure? This action cannot be undone.")) {
         try {
@@ -155,7 +192,6 @@ function loadUserFolders(uid) {
             const fName = data.name;
             const fId = docSnap.id;
 
-            // ফোল্ডার লিস্ট
             if(customFolderList) {
                 const btn = document.createElement('div');
                 btn.className = 'folder-chip';
@@ -231,7 +267,7 @@ async function deleteCustomFolder(folderId, folderName) {
 // ==================================================
 
 function loadUserNotes(uid, filterType = 'All', filterValue = null) {
-    currentViewType = filterType; // বর্তমান ভিউ টাইপ মনে রাখা
+    currentViewType = filterType;
     const notesRef = collection(db, "notes");
     let q;
 
@@ -245,7 +281,6 @@ function loadUserNotes(uid, filterType = 'All', filterValue = null) {
     }
 
     if (filterType === 'trash') {
-        // শুধুমাত্র ট্র্যাশ আইটেম লোড হবে
         q = query(notesRef, where("uid", "==", uid), where("status", "==", "trash"), orderBy("timestamp", "desc"));
     } 
     else if (filterType === 'folder') {
@@ -275,15 +310,14 @@ function loadUserNotes(uid, filterType = 'All', filterValue = null) {
 
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            // ট্র্যাশ মোড না হলে পিন করা নোটগুলো মেইন গ্রিডে দেখাবো না (পিন সেকশনে দেখাবো)
             if (filterType !== 'trash' && data.isPinned) return; 
-            const card = createNoteCard(docSnap, filterType === 'trash'); // ট্র্যাশ ফ্ল্যাগ পাস করা হলো
+            const card = createNoteCard(docSnap, filterType === 'trash'); 
             contentGrid.appendChild(card);
         });
 
         if(searchInput && searchInput.value) searchInput.dispatchEvent(new Event('input'));
         
-        // Drag & Drop শুধুমাত্র অ্যাক্টিভ নোটের জন্য
+        // Drag & Drop
         if (typeof Sortable !== 'undefined' && filterType !== 'trash') {
              if (contentGrid.sortableInstance) contentGrid.sortableInstance.destroy();
              contentGrid.sortableInstance = new Sortable(contentGrid, { 
@@ -293,7 +327,6 @@ function loadUserNotes(uid, filterType = 'All', filterValue = null) {
     });
 }
 
-// ফিল্টার বাটন হ্যান্ডলার
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -304,7 +337,6 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     });
 });
 
-// পিন নোট লোড
 function loadPinnedNotes(uid) {
     const q = query(collection(db, "notes"), where("uid", "==", uid), where("isPinned", "==", true), where("status", "==", "active"));
     const pinSection = document.getElementById('pinned-section');
@@ -325,7 +357,7 @@ function loadPinnedNotes(uid) {
 }
 
 // ==================================================
-// 🎨 ৫. কার্ড জেনারেটর (Updated Logic)
+// 🎨 ৫. কার্ড জেনারেটর
 // ==================================================
 
 function createNoteCard(docSnap, isTrashView) {
@@ -336,7 +368,6 @@ function createNoteCard(docSnap, isTrashView) {
     card.setAttribute('data-id', id);
     if(data.color) card.style.backgroundColor = data.color;
 
-    // Drag Handle শুধুমাত্র যদি ট্র্যাশ না হয়
     if(!isTrashView) {
         const dragIcon = document.createElement('div');
         dragIcon.className = 'drag-handle';
@@ -346,7 +377,6 @@ function createNoteCard(docSnap, isTrashView) {
         if(data.isPinned) card.innerHTML += `<div class="pin-indicator">📌</div>`;
     }
 
-    // ফোল্ডার ব্যাজ
     if(data.folder && !isTrashView) {
         const folderBadge = document.createElement('span');
         folderBadge.style.cssText = "position:absolute; top:8px; right:30px; background:rgba(0,0,0,0.1); font-size:10px; padding:2px 6px; border-radius:10px; color:#555;";
@@ -356,7 +386,6 @@ function createNoteCard(docSnap, isTrashView) {
 
     let contentHTML = '';
 
-    // Image/Link/Text Rendering Logic
     if (data.type === 'image') {
         contentHTML += `<img src="${data.fileUrl}" loading="lazy" style="width:100%; border-radius: 8px; display:block; margin-bottom:5px;">`;
         if(data.text) contentHTML += generateTextHTML(data.text);
@@ -375,12 +404,10 @@ function createNoteCard(docSnap, isTrashView) {
         contentHTML += generateTextHTML(data.text || '');
     }
 
-    // 👇 কার্ড ফুটার লজিক (Trash vs Normal)
     contentHTML += `<div class="card-footer">
         <small class="card-date">${data.timestamp?.toDate().toLocaleDateString() || ''}</small>`;
 
     if (isTrashView) {
-        // 🗑️ ট্র্যাশ ভিউ: রিকভার এবং পার্মানেন্ট ডিলিট বাটন
         contentHTML += `
             <div style="display:flex; gap:10px;">
                 <button title="Restore" onclick="restoreNote('${id}')" style="background:none; border:none; cursor:pointer; font-size:16px;">♻️</button>
@@ -388,7 +415,6 @@ function createNoteCard(docSnap, isTrashView) {
             </div>
         `;
     } else {
-        // 📝 নরমাল ভিউ: কনটেক্সট মেনু বাটন
         contentHTML += `<button class="delete-btn" onclick="openContextMenu(event, '${id}')">⋮</button>`;
     }
     
@@ -396,7 +422,6 @@ function createNoteCard(docSnap, isTrashView) {
 
     card.innerHTML += contentHTML; 
 
-    // Read More Event
     const readMoreBtn = card.querySelector('.read-more-btn');
     if (readMoreBtn) {
         readMoreBtn.addEventListener('click', (e) => {
@@ -405,7 +430,6 @@ function createNoteCard(docSnap, isTrashView) {
         });
     }
 
-    // কনটেক্সট মেনু ট্রিগার (শুধুমাত্র নরমাল ভিউতে)
     if (!isTrashView) {
         card.addEventListener('contextmenu', (e) => {
             e.preventDefault();
@@ -415,7 +439,6 @@ function createNoteCard(docSnap, isTrashView) {
     return card;
 }
 
-// Text Helper
 function generateTextHTML(text) {
     if (!text) return "";
     const tempDiv = document.createElement("div");
@@ -432,7 +455,7 @@ function generateTextHTML(text) {
 }
 
 // ==================================================
-// 💾 ৬. নোট সেভ লজিক (মোবাইল ও পিসি)
+// 💾 ৬. নোট সেভ লজিক
 // ==================================================
 if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
@@ -454,7 +477,6 @@ if (saveBtn) {
             let type = 'text';
             let linkMeta = {};
 
-            // ছবি আপলোড লজিক (গ্যালারি থেকে সিলেক্ট করা)
             if (file || androidSharedImage) {
                 const formData = new FormData();
                 formData.append('file', file || androidSharedImage);
@@ -479,6 +501,9 @@ if (saveBtn) {
 
             noteInput.value = "";
             clearFileInput(); 
+            // সেভ হওয়ার পর 'All' ভিউতে ফেরত যাওয়া
+            const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
+            if(allBtn) allBtn.click();
 
         } catch (error) { alert("Error: " + error.message); } 
         finally {
@@ -487,43 +512,6 @@ if (saveBtn) {
             if(statusText) statusText.style.display = 'none';
         }
     });
-}
-
-// ==================================================
-// 📥 ৭. শেয়ার হ্যান্ডলার (Mobile Share Target)
-// ==================================================
-async function handleSharedContent(uid) {
-    const p = new URLSearchParams(window.location.search);
-    const title = p.get('title');
-    const text = p.get('text');
-    const url = p.get('url');
-
-    // যদি ইউজার ফোন থেকে কোনো টেক্সট বা লিংক শেয়ার করে
-    let sharedContent = "";
-    if (title) sharedContent += title + "\n";
-    if (text) sharedContent += text + "\n";
-    if (url) sharedContent += url;
-
-    if(sharedContent.trim()) {
-        // ইনপুট বক্সে সেট করে দেব যাতে ইউজার এডিট করে সেভ করতে পারে
-        noteInput.value = sharedContent.trim();
-        
-        // অথবা সরাসরি সেভ করতে চাইলে নিচের কমেন্ট আউট করা কোড ব্যবহার করতে পারেন:
-        /*
-        try {
-            await addDoc(collection(db, "notes"), { 
-                uid, text: sharedContent.trim(), type: 'text', folder: "General", 
-                status: 'active', timestamp: serverTimestamp(), color:'#ffffff' 
-            });
-            // URL ক্লিন করা
-            window.history.replaceState({}, document.title, window.location.pathname);
-            alert("Shared content saved!");
-        } catch(e) { console.error(e); }
-        */
-       
-       // URL প্যারামিটার ক্লিন করা যাতে রিফ্রেশ দিলে আবার না আসে
-       window.history.replaceState({}, document.title, window.location.pathname);
-    }
 }
 
 // ==================================================
@@ -566,7 +554,6 @@ function openShareModal(id) {
     shareModal.style.display = 'flex';
 }
 
-// শেয়ার বাটন লজিক
 document.getElementById('share-wa')?.addEventListener('click', () => shareNote('whatsapp'));
 document.getElementById('share-fb')?.addEventListener('click', () => shareNote('facebook'));
 document.getElementById('share-tg')?.addEventListener('click', () => shareNote('telegram'));
@@ -622,7 +609,6 @@ if(updateNoteBtn) updateNoteBtn.onclick = async () => {
     editModal.style.display = 'none';
 };
 
-// মোবাইল গ্যালারি ট্রিগার (Upload Image বাটনে ক্লিক করলে)
 if(triggerFile) triggerFile.onclick = () => fileInput.click();
 
 if(fileInput) fileInput.onchange = (e) => {
@@ -641,7 +627,6 @@ async function getLinkPreviewData(url) { try{ const r=await fetch(`${WORKER_URL}
 
 if (logoutBtn) logoutBtn.onclick = () => signOut(auth).then(() => window.location.href = "index.html");
 
-// সার্চ ফাংশন
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
         const searchText = e.target.value.toLowerCase();
@@ -651,13 +636,12 @@ if (searchInput) {
         });
     });
 }
-// গ্রিড/লিস্ট টগল
+
 if(gridViewBtn && listViewBtn) {
     gridViewBtn.addEventListener('click', () => { contentGrid.classList.remove('list-view'); gridViewBtn.classList.add('active'); listViewBtn.classList.remove('active'); });
     listViewBtn.addEventListener('click', () => { contentGrid.classList.add('list-view'); listViewBtn.classList.add('active'); gridViewBtn.classList.remove('active'); });
 }
 
-// মোডাল ক্লোজ হ্যান্ডলার
 [readModal, shareModal, editModal].forEach(modal => {
     if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; });
 });
@@ -665,7 +649,6 @@ if(closeReadModalBtn) closeReadModalBtn.onclick = () => readModal.style.display 
 if(closeShareModalBtn) closeShareModalBtn.onclick = () => shareModal.style.display = 'none';
 if(closeModalBtn) closeModalBtn.onclick = () => editModal.style.display = 'none';
 
-// উইন্ডো ক্লিক (মেনু বন্ধ করা)
 window.addEventListener('click', (e) => {
     if(contextMenu && !contextMenu.contains(e.target) && !e.target.classList.contains('delete-btn')) {
         contextMenu.style.display = 'none';
