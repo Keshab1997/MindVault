@@ -294,7 +294,75 @@ function loadPinnedNotes(uid) {
 }
 
 // ==================================================
-// 🎨 ৫. কার্ড জেনারেটর
+// 🎬 Universal Media Embed (YouTube, Facebook, Instagram)
+// ==================================================
+function getUniversalEmbedHTML(text) {
+    if (!text) return null;
+    let url = text.trim();
+
+    // 🔴 ১. YouTube Video & Shorts
+    const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const ytMatch = url.match(ytRegex);
+    
+    if (ytMatch) {
+        const videoId = ytMatch[1];
+        return `
+            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-bottom:10px; background: #000;">
+                <iframe 
+                    src="https://www.youtube.com/embed/${videoId}" 
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>`;
+    }
+
+    // 🔵 ২. Facebook Video & Reels
+    if (url.includes('facebook.com') && (url.includes('/videos/') || url.includes('/reel/') || url.includes('/watch'))) {
+        const encodedUrl = encodeURIComponent(url);
+        return `
+            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-bottom:10px; background: #000;">
+                <iframe 
+                    src="https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false&t=0" 
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+                    scrolling="no" 
+                    frameborder="0" 
+                    allowfullscreen="true" 
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
+                </iframe>
+            </div>`;
+    }
+
+    // 🟣 ৩. Instagram (Reel & Post)
+    const instaRegex = /(https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel)\/[\w-]+)/;
+    const instaMatch = url.split('?')[0].match(instaRegex);
+    
+    if (instaMatch) {
+        let cleanUrl = instaMatch[0];
+        let embedUrl = cleanUrl.endsWith('/') ? cleanUrl + 'embed/captioned' : cleanUrl + '/embed/captioned';
+        
+        return `
+            <div style="position: relative; padding-bottom: 125%; height: 0; overflow: hidden; border-radius: 8px; border: 1px solid #eee; margin-bottom:10px; background: #000;">
+                <iframe 
+                    src="${embedUrl}" 
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+                    frameborder="0" 
+                    scrolling="no" 
+                    allowtransparency="true"
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                    allowfullscreen>
+                </iframe>
+            </div>
+            <div style="text-align: right; margin-bottom: 5px;">
+                <a href="${cleanUrl}" target="_blank" style="font-size: 11px; color: #999; text-decoration: none;">Open in Instagram ↗</a>
+            </div>`;
+    }
+
+    return null;
+}
+
+// ==================================================
+// 🎨 ৫. কার্ড জেনারেটর (UNIVERSAL SUPPORT)
 // ==================================================
 function createNoteCard(docSnap, isTrashView) {
     const data = docSnap.data();
@@ -321,10 +389,18 @@ function createNoteCard(docSnap, isTrashView) {
 
     let contentHTML = '';
 
-    if (data.type === 'image') {
+    // ✅ ১. Universal Media Check (YouTube, FB, Insta)
+    const mediaEmbed = getUniversalEmbedHTML(data.text);
+    
+    if (mediaEmbed) {
+        contentHTML += mediaEmbed;
+    }
+    // ২. যদি সাধারণ ইমেজ হয়
+    else if (data.type === 'image') {
         contentHTML += `<img src="${data.fileUrl}" loading="lazy" style="width:100%; border-radius: 8px; display:block; margin-bottom:5px;">`;
         if(data.text) contentHTML += generateTextHTML(data.text);
     }
+    // ৩. যদি অন্য লিংক প্রিভিউ হয়
     else if (data.type === 'link' && data.metaTitle) {
         contentHTML += `
         <a href="${data.text}" target="_blank" style="text-decoration:none; color:inherit; display:block; border:1px solid rgba(0,0,0,0.1); border-radius:10px; overflow:hidden; background: rgba(255,255,255,0.5);">
@@ -335,6 +411,7 @@ function createNoteCard(docSnap, isTrashView) {
             </div>
         </a>`;
     } 
+    // ৪. সাধারণ টেক্সট
     else {
         contentHTML += generateTextHTML(data.text || '');
     }
@@ -415,8 +492,11 @@ if (saveBtn) {
             } 
             else if (isValidURL(text)) {
                 type = 'link';
-                saveBtn.innerText = "Fetching Preview...";
-                linkMeta = await getLinkPreviewData(text);
+                // Instagram এবং Facebook এর জন্য Fetch Preview দরকার নেই
+                if (!text.includes('instagram.com') && !text.includes('facebook.com')) {
+                    saveBtn.innerText = "Fetching Preview...";
+                    linkMeta = await getLinkPreviewData(text);
+                }
             }
 
             saveBtn.innerText = "Saving to Brain...";
@@ -480,7 +560,6 @@ window.openContextMenu = async (e, id) => {
         const shareEl = document.getElementById('ctx-share');
         if(shareEl) shareEl.onclick = () => { openShareModal(id); contextMenu.style.display = 'none'; };
         
-        // ✅ [নতুন] ফিক্সড ডাউনলোড ফাংশন
         const downloadBtn = document.getElementById('ctx-download');
         if (downloadBtn) {
             downloadBtn.onclick = () => {
@@ -532,7 +611,7 @@ async function shareNote(platform) {
 }
 
 // ==================================================
-// 📖 ৯. রিডিং মোডাল
+// 📖 ৯. রিডিং মোডাল (UNIVERSAL UPDATED)
 // ==================================================
 function openReadModal(data, id) {
     if(!readModal || !readModalContent) return;
@@ -543,14 +622,26 @@ function openReadModal(data, id) {
     }
 
     let html = '';
-    if (data.type === 'image' && data.fileUrl) html += `<img src="${data.fileUrl}" alt="Note Image">`;
-    if (data.type === 'link') {
+    
+    // ✅ Universal Embed Check inside Modal
+    const mediaEmbed = getUniversalEmbedHTML(data.text);
+    
+    if (mediaEmbed) {
+        html += mediaEmbed;
+    } 
+    else if (data.type === 'image' && data.fileUrl) {
+        html += `<img src="${data.fileUrl}" alt="Note Image">`;
+    }
+    
+    if (data.type === 'link' && !mediaEmbed) {
         html += `<div style="background:#f0f2f5; padding:15px; border-radius:8px; margin-bottom:20px; border-left: 4px solid #007bff;">
             <a href="${data.text}" target="_blank" style="font-size:18px; font-weight:bold;">${data.metaTitle || data.text}</a>
             <p style="margin:5px 0 0 0; color:#666;">${data.metaDesc || ''}</p>
         </div>`;
     }
-    if (data.text) html += marked.parse(data.text);
+    
+    // যদি ভিডিও না হয় তবেই টেক্সট রেন্ডার হবে (ডুপ্লিকেট এড়াতে)
+    if (data.text && !mediaEmbed) html += marked.parse(data.text);
 
     readModalContent.innerHTML = html;
     readModal.style.display = 'flex';
@@ -611,7 +702,6 @@ if(gridViewBtn && listViewBtn) {
 if(closeReadModalBtn) closeReadModalBtn.onclick = () => readModal.style.display = 'none';
 if(closeShareModalBtn) closeShareModalBtn.onclick = () => shareModal.style.display = 'none';
 
-// ✅ সমস্যা সমাধান: নির্দিষ্ট করে বাটনটি ধরা হয়েছে এবং চেক করা হয়েছে
 const editCloseBtn = document.querySelector('#editModal .close-modal');
 if(editCloseBtn) {
     editCloseBtn.onclick = () => editModal.style.display = 'none';
@@ -624,21 +714,18 @@ window.addEventListener('click', (e) => {
 });
 
 // ==================================================
-// ⬇️ ১১. নতুন ডাউনলোড ফাংশন (Cloudinary Attachment Trick)
+// ⬇️ ১১. ডাউনলোড ফাংশন
 // ==================================================
 async function downloadNoteContent(data) {
     try {
         if (data.type === 'image' && data.fileUrl) {
             let downloadUrl = data.fileUrl;
-            // ✅ Cloudinary থেকে সরাসরি ডাউনলোডের জন্য URL মডিফাই করা হলো
             if(downloadUrl.includes('cloudinary.com') && downloadUrl.includes('/upload/')) {
                 downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
             }
-            // ব্রাউজারকে ফোর্স করা হচ্ছে ফাইলটি ওপেন/ডাউনলোড করার জন্য
             window.location.href = downloadUrl;
         } 
         else {
-            // টেক্সট নোট ডাউনলোড
             const textContent = data.text || data.metaTitle || "Empty Note";
             const blob = new Blob([textContent], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);

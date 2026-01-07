@@ -75,6 +75,7 @@
     padding-bottom: 5px;
     width: 100%;
     scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
 }
 .filter-wrapper::-webkit-scrollbar {
     display: none; /* Chrome/Safari */
@@ -230,6 +231,7 @@ input[name="noteColor"]:checked + .color-circle {
     box-sizing: border-box;
     transition: transform 0.2s, box-shadow 0.2s;
     position: relative;
+    overflow: hidden; /* কার্ডের বাইরে কিছু গেলে কেটে ফেলবে */
 }
 
 .note-card:hover {
@@ -237,24 +239,29 @@ input[name="noteColor"]:checked + .color-circle {
     transform: translateY(-2px);
 }
 
-/* 🆕 বড় নোটের জন্য কন্টেইনার (Read More ফিচার) */
+/* 🆕 ভিডিও এবং আইফ্রেম ফিক্স (Video Embed Fix) */
+.note-card iframe {
+    max-width: 100%;
+    border-radius: 8px;
+}
+
+/* বড় নোটের জন্য কন্টেইনার (Read More) */
 .note-text-container {
-    max-height: 140px; /* এই উচ্চতার বেশি হলে হাইড হবে */
+    max-height: 140px; 
     overflow: hidden;
     position: relative;
     transition: max-height 0.4s ease-in-out;
 }
 
-/* যখন Expand করা হবে */
 .note-text-container.expanded {
-    max-height: none; /* সব দেখাবে */
+    max-height: none; 
 }
 
-/* Read More বাটন স্টাইল */
+/* Read More বাটন */
 .read-more-btn {
     background: none;
     border: none;
-    color: #1877f2; /* ফেসবুক ব্লু */
+    color: #1877f2;
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
@@ -301,25 +308,11 @@ input[name="noteColor"]:checked + .color-circle {
     font-size: 0.9em;
 }
 
-/* হ্যাশট্যাগ */
-.note-tag {
-    display: inline-block;
-    background: #e7f3ff;
-    color: #1877f2;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    margin-right: 5px;
-    text-decoration: none;
-    margin-top: 5px;
-}
-
 /* পিন আইকন */
 .pin-indicator {
     position: absolute;
-    top: -8px;
-    right: -8px;
+    top: 10px;
+    right: 10px;
     background: #fff;
     border: 1px solid #ddd;
     border-radius: 50%;
@@ -330,7 +323,7 @@ input[name="noteColor"]:checked + .color-circle {
     justify-content: center;
     font-size: 12px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    z-index: 2;
+    z-index: 5;
 }
 
 /* ফুটার */
@@ -365,50 +358,7 @@ input[name="noteColor"]:checked + .color-circle {
 }
 
 /* ==================================================
-   ৫. প্রিভিউ কার্ড (Link Preview)
-   ================================================= */
-.link-preview-box {
-    margin-top: 10px;
-}
-
-.preview-card-link {
-    display: block;
-    text-decoration: none;
-    color: inherit;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
-    overflow: hidden;
-    background: #fff;
-    transition: 0.2s;
-}
-
-.preview-card-link:hover {
-    background-color: #f7f8fa;
-}
-
-.preview-img {
-    height: 140px;
-    background-size: cover;
-    background-position: center;
-}
-
-.preview-info {
-    padding: 10px;
-}
-
-.preview-title {
-    font-size: 14px;
-    font-weight: 600;
-    margin: 0;
-    color: #1c1e21;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* ==================================================
-   ৬. অন্যান্য সেকশন (Pin, Divider)
+   ৫. অন্যান্য সেকশন (Pin, Divider)
    ================================================= */
 .section-title {
     font-size: 16px;
@@ -427,8 +377,9 @@ input[name="noteColor"]:checked + .color-circle {
 }
 
 /* ==================================================
-   ৭. এডিট মোডাল (Edit Modal)
+   ৬. সকল মোডাল (All Modals)
    ================================================= */
+/* বেসিক মোডাল স্টাইল (Edit & Share) */
 .custom-modal {
     position: fixed;
     z-index: 3000;
@@ -467,6 +418,7 @@ input[name="noteColor"]:checked + .color-circle {
     color: #aaa;
     cursor: pointer;
     font-weight: bold;
+    z-index: 10;
 }
 
 .close-modal:hover {
@@ -479,8 +431,71 @@ input[name="noteColor"]:checked + .color-circle {
     color: #1c1e21;
 }
 
+/* রিডিং মোডাল (Reading Modal) */
+.read-modal-overlay {
+    display: none; 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6); z-index: 3500;
+    justify-content: center; align-items: center;
+    backdrop-filter: blur(5px);
+}
+.read-modal-paper {
+    background: #fff; width: 90%; max-width: 700px; height: 85vh;
+    border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: flex; flex-direction: column; overflow: hidden;
+    position: relative; animation: slideUp 0.3s ease-out;
+}
+@keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.read-header {
+    padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9;
+}
+.read-meta { font-size: 12px; color: #666; display: flex; gap: 10px; align-items: center; }
+.read-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.read-close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #555; }
+
+.read-content {
+    padding: 30px; overflow-y: auto; font-family: 'Georgia', serif; 
+    font-size: 18px; line-height: 1.8; color: #2d2d2d; flex: 1;
+}
+.read-content img { max-width: 100%; border-radius: 8px; margin: 15px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.read-content a { color: #007bff; text-decoration: underline; }
+.read-content blockquote { border-left: 4px solid #007bff; padding-left: 15px; color: #555; font-style: italic; margin: 20px 0; }
+
+/* শেয়ার মোডাল স্টাইল (Share Modal) */
+.share-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+.share-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    width: 100%;
+    max-width: 400px;
+}
+.share-options button {
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.share-options button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
 /* ==================================================
-   ৮. কনটেক্সট মেনু (Right Click Menu)
+   ৭. কনটেক্সট মেনু (Right Click Menu)
    ================================================= */
 .context-menu {
     position: absolute;
@@ -525,7 +540,7 @@ input[name="noteColor"]:checked + .color-circle {
 }
 
 /* ==================================================
-   ৯. ফোল্ডার এবং ড্র্যাগ হ্যান্ডেল (Folders & Utils)
+   ৮. ফোল্ডার এবং ড্র্যাগ হ্যান্ডেল (Folders & Utils)
    ================================================= */
 .folder-scroll-container {
     display: flex;
@@ -590,7 +605,7 @@ input[name="noteColor"]:checked + .color-circle {
 .folder-delete-btn {
     margin-left: 8px;
     font-size: 14px;
-    color: #999; /* ডিফল্ট কালার */
+    color: #999;
     cursor: pointer;
     font-weight: bold;
     padding: 0 4px;
@@ -598,7 +613,6 @@ input[name="noteColor"]:checked + .color-circle {
     transition: 0.2s;
 }
 
-/* Active অবস্থায় ডিলিট বাটন সাদা হবে */
 .folder-chip.active .folder-delete-btn {
     color: #e4e6eb;
 }
@@ -626,7 +640,7 @@ input[name="noteColor"]:checked + .color-circle {
 }
 
 /* ==================================================
-   ১০. রেসপনসিভ ডিজাইন (Responsive)
+   ৯. রেসপনসিভ ডিজাইন (Responsive)
    ================================================= */
 @media (max-width: 1024px) {
     .masonry-grid { column-count: 2; }
@@ -650,67 +664,4 @@ input[name="noteColor"]:checked + .color-circle {
     margin-right: auto;
     margin-bottom: 20px;
     display: block;
-}
-/* 👇 রিডিং মোডাল স্টাইল (এখন এখানে আছে) */
-.read-modal-overlay {
-    display: none; 
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.6); z-index: 2000;
-    justify-content: center; align-items: center;
-    backdrop-filter: blur(5px);
-}
-.read-modal-paper {
-    background: #fff; width: 90%; max-width: 700px; height: 85vh;
-    border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    display: flex; flex-direction: column; overflow: hidden;
-    position: relative; animation: slideUp 0.3s ease-out;
-}
-@keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-.read-header {
-    padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9;
-}
-.read-meta { font-size: 12px; color: #666; display: flex; gap: 10px; align-items: center; }
-.read-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
-.read-close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #555; }
-
-.read-content {
-    padding: 30px; overflow-y: auto; font-family: 'Georgia', serif; /* বইয়ের মতো ফন্ট */
-    font-size: 18px; line-height: 1.8; color: #2d2d2d; flex: 1;
-}
-.read-content img { max-width: 100%; border-radius: 8px; margin: 15px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-.read-content a { color: #007bff; text-decoration: underline; }
-.read-content blockquote { border-left: 4px solid #007bff; padding-left: 15px; color: #555; font-style: italic; margin: 20px 0; }
-
-
-/* 👇 নতুন: শেয়ার মোডালের স্টাইল */
-.share-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-}
-.share-options {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    width: 100%;
-    max-width: 400px;
-}
-.share-options button {
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-.share-options button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
