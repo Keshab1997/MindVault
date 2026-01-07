@@ -54,7 +54,6 @@ const readModalContent = document.getElementById('readModalContent');
 const readModalDate = document.getElementById('readModalDate');
 const readModalFolder = document.getElementById('readModalFolder');
 const closeReadModalBtn = document.getElementById('closeReadModalBtn');
-const closeModalBtn = document.querySelector('.close-modal');
 
 // শেয়ার মোডাল এলিমেন্টস
 const shareModal = document.getElementById('shareModal');
@@ -97,7 +96,6 @@ function handleSharedContent(uid) {
     if (text && text !== "null") sharedContent += text;
 
     if(sharedContent.trim()) {
-        console.log("Shared Content:", sharedContent);
         if(noteInput) {
             noteInput.value = sharedContent.trim();
             noteInput.style.height = 'auto';
@@ -383,7 +381,7 @@ function generateTextHTML(text) {
 }
 
 // ==================================================
-// 💾 ৬. নোট সেভ লজিক (Preview Guaranteed)
+// 💾 ৬. নোট সেভ লজিক
 // ==================================================
 if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
@@ -405,7 +403,6 @@ if (saveBtn) {
             let type = 'text';
             let linkMeta = {};
 
-            // ১. যদি ছবি থাকে (গ্যালারি বা অ্যাপ শেয়ার)
             if (file || androidSharedImage) {
                 saveBtn.innerText = "Uploading Image...";
                 const formData = new FormData();
@@ -416,15 +413,12 @@ if (saveBtn) {
                 fileUrl = data.secure_url; 
                 type = 'image';
             } 
-            // ২. যদি টেক্সট হয় এবং সেটা URL হয়
             else if (isValidURL(text)) {
                 type = 'link';
-                // 👇 এখানে টাইমআউট বাদ দেওয়া হয়েছে, প্রিভিউ না আসা পর্যন্ত অপেক্ষা করবে
                 saveBtn.innerText = "Fetching Preview...";
                 linkMeta = await getLinkPreviewData(text);
             }
 
-            // ৩. ফায়ারবেসে সেভ
             saveBtn.innerText = "Saving to Brain...";
             await addDoc(collection(db, "notes"), {
                 uid: user.uid, text: text, fileUrl: fileUrl, type: type,
@@ -449,7 +443,7 @@ if (saveBtn) {
 }
 
 // ==================================================
-// 📤 ৮. শেয়ার মোডাল
+// 📤 ৮. কনটেক্সট মেনু ও শেয়ার মোডাল
 // ==================================================
 window.openContextMenu = async (e, id) => {
     e.stopPropagation();
@@ -468,13 +462,32 @@ window.openContextMenu = async (e, id) => {
         contextMenu.style.top = `${y}px`; contextMenu.style.left = `${x}px`;
         contextMenu.style.display = 'block';
         
-        document.getElementById('ctx-trash').onclick = () => { updateDoc(doc(db, "notes", id), { status: 'trash' }); contextMenu.style.display = 'none'; };
-        document.getElementById('ctx-edit').onclick = () => { editNoteInput.value = data.text; editModal.style.display = 'flex'; contextMenu.style.display = 'none'; };
-        document.getElementById('ctx-copy').onclick = () => { navigator.clipboard.writeText(data.text); contextMenu.style.display = 'none'; };
+        const trashEl = document.getElementById('ctx-trash');
+        if(trashEl) trashEl.onclick = () => { updateDoc(doc(db, "notes", id), { status: 'trash' }); contextMenu.style.display = 'none'; };
+        
+        const editEl = document.getElementById('ctx-edit');
+        if(editEl) editEl.onclick = () => { editNoteInput.value = data.text; editModal.style.display = 'flex'; contextMenu.style.display = 'none'; };
+        
+        const copyEl = document.getElementById('ctx-copy');
+        if(copyEl) copyEl.onclick = () => { navigator.clipboard.writeText(data.text); contextMenu.style.display = 'none'; };
+        
         const pinBtn = document.getElementById('ctx-pin');
-        pinBtn.innerHTML = data.isPinned ? "🚫 Unpin" : "📌 Pin";
-        pinBtn.onclick = () => { updateDoc(doc(db, "notes", id), { isPinned: !data.isPinned }); contextMenu.style.display = 'none'; };
-        document.getElementById('ctx-share').onclick = () => { openShareModal(id); contextMenu.style.display = 'none'; };
+        if(pinBtn) {
+            pinBtn.innerHTML = data.isPinned ? "🚫 Unpin" : "📌 Pin";
+            pinBtn.onclick = () => { updateDoc(doc(db, "notes", id), { isPinned: !data.isPinned }); contextMenu.style.display = 'none'; };
+        }
+        
+        const shareEl = document.getElementById('ctx-share');
+        if(shareEl) shareEl.onclick = () => { openShareModal(id); contextMenu.style.display = 'none'; };
+        
+        // ✅ [নতুন] ফিক্সড ডাউনলোড ফাংশন
+        const downloadBtn = document.getElementById('ctx-download');
+        if (downloadBtn) {
+            downloadBtn.onclick = () => {
+                downloadNoteContent(data);
+                contextMenu.style.display = 'none';
+            };
+        }
     }
 };
 
@@ -490,7 +503,6 @@ document.getElementById('share-tg')?.addEventListener('click', () => shareNote('
 document.getElementById('share-mail')?.addEventListener('click', () => shareNote('email'));
 document.getElementById('share-copy')?.addEventListener('click', () => shareNote('copy'));
 
-// 👇 শেয়ার ফাংশন (Image File Share Support)
 async function shareNote(platform) {
     const noteId = currentEditId;
     if (!noteId) return;
@@ -503,14 +515,12 @@ async function shareNote(platform) {
     const textToShare = data.text || "MyBrain Note";
     const fullText = textToShare + "\n\n" + shareUrl;
 
-    // ১. যদি অ্যাপের ভেতর থেকে ছবি শেয়ার করা হয়
     if (typeof Android !== "undefined" && Android.shareImage && data.type === 'image' && data.fileUrl) {
         Android.shareImage(data.fileUrl, textToShare);
         shareModal.style.display = 'none';
         return; 
     }
 
-    // ২. নরমাল শেয়ার
     switch(platform) {
         case 'whatsapp': window.open(`https://wa.me/?text=${encodeURIComponent(fullText)}`, '_blank'); break;
         case 'facebook': window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank'); break;
@@ -597,9 +607,15 @@ if(gridViewBtn && listViewBtn) {
 [readModal, shareModal, editModal].forEach(modal => {
     if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; });
 });
+
 if(closeReadModalBtn) closeReadModalBtn.onclick = () => readModal.style.display = 'none';
 if(closeShareModalBtn) closeShareModalBtn.onclick = () => shareModal.style.display = 'none';
-if(closeModalBtn) closeModalBtn.onclick = () => editModal.style.display = 'none';
+
+// ✅ সমস্যা সমাধান: নির্দিষ্ট করে বাটনটি ধরা হয়েছে এবং চেক করা হয়েছে
+const editCloseBtn = document.querySelector('#editModal .close-modal');
+if(editCloseBtn) {
+    editCloseBtn.onclick = () => editModal.style.display = 'none';
+}
 
 window.addEventListener('click', (e) => {
     if(contextMenu && !contextMenu.contains(e.target) && !e.target.classList.contains('delete-btn')) {
@@ -608,7 +624,41 @@ window.addEventListener('click', (e) => {
 });
 
 // ==================================================
-// 📱 ১১. Android App Integration
+// ⬇️ ১১. নতুন ডাউনলোড ফাংশন (Cloudinary Attachment Trick)
+// ==================================================
+async function downloadNoteContent(data) {
+    try {
+        if (data.type === 'image' && data.fileUrl) {
+            let downloadUrl = data.fileUrl;
+            // ✅ Cloudinary থেকে সরাসরি ডাউনলোডের জন্য URL মডিফাই করা হলো
+            if(downloadUrl.includes('cloudinary.com') && downloadUrl.includes('/upload/')) {
+                downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
+            }
+            // ব্রাউজারকে ফোর্স করা হচ্ছে ফাইলটি ওপেন/ডাউনলোড করার জন্য
+            window.location.href = downloadUrl;
+        } 
+        else {
+            // টেক্সট নোট ডাউনলোড
+            const textContent = data.text || data.metaTitle || "Empty Note";
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `mybrain_note_${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+    } catch (error) {
+        console.error("Download failed:", error);
+        alert("Download failed! See console.");
+    }
+}
+
+// ==================================================
+// 📱 ১২. Android App Integration
 // ==================================================
 window.receiveImageFromApp = (base64Data) => {
     androidSharedImage = base64DataToBlob(base64Data);
