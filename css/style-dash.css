@@ -587,3 +587,100 @@ column-count: 1 !important;
 
 .drag-handle { cursor: grab; color: #ccc; font-size: 16px; padding: 5px; position: absolute; top: 5px; left: 5px; z-index: 10; touch-action: none; }
 .drag-handle:active { cursor: grabbing; color: #1877f2; }
+
+/* =========================================
+AI Dropdown & Toolbar Styles (New)
+========================================= */
+
+/* ড্রপডাউন কন্টেইনার */
+.ai-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* AI বাটন স্টাইল */
+#btn-ai {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px; /* গোল শেপ */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(99, 102, 241, 0.2);
+    white-space: nowrap;
+}
+
+#btn-ai:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);
+}
+
+#btn-ai:active {
+    transform: translateY(0);
+}
+
+/* ড্রপডাউন মেনু (সুন্দর পজিশনিং) */
+#ai-menu {
+    display: none;
+    position: absolute;
+    top: 120%; /* বাটন থেকে একটু নিচে */
+    left: 0;
+    background: #ffffff;
+    border: 1px solid #f3f4f6;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    width: 180px; /* ফিক্সড চওড়া */
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideDown 0.2s ease;
+}
+
+/* মেনু আইটেম */
+.ai-option {
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+    border-bottom: 1px solid #f9fafb;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-option:last-child {
+    border-bottom: none;
+}
+
+.ai-option:hover {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+/* এনিমেশন */
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* মোবাইল ফিক্স (Mobile Responsive) */
+@media (max-width: 600px) {
+    /* মোবাইলে মেনু যাতে কেটে না যায় */
+    #ai-menu {
+        left: auto;
+        right: -50px; /* ডানদিকে চাপানো */
+        width: 200px;
+    }
+    
+    /* টুলবার স্ক্রল ফিক্স */
+    .rich-toolbar {
+        overflow-x: visible !important; /* ড্রপডাউন দেখার জন্য */
+        flex-wrap: wrap; /* আইকনগুলো নিচে নামবে */
+    }
+}

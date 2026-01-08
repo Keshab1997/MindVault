@@ -4,6 +4,7 @@ import * as DBService from "./firebase-service.js";
 import * as UI from "./ui-renderer.js";
 import * as Utils from "./utils.js";
 import { openContextMenu, openReadModal } from "./menu-manager.js";
+import { askAI } from "./ai-service.js"; // 🔥 AI Service Import
 
 let unsubscribeNotes = null;
 let mediaRecorder = null;
@@ -230,14 +231,37 @@ export function setupNoteSaving(user) {
     const triggerFileBtn = document.getElementById('triggerFile');
     const removeImageBtn = document.getElementById('remove-image-btn');
 
+    // 🔥 AI বাটন এবং টুলবার (আপডেটেড)
     const toolbarHTML = `
-        <div class="rich-toolbar" style="display:flex; gap:10px; margin-bottom:10px; padding-bottom:5px; border-bottom:1px solid #eee;">
-            <button id="btn-bold" title="Bold" style="background:none; border:none; cursor:pointer; font-weight:bold;">B</button>
-            <button id="btn-italic" title="Italic" style="background:none; border:none; cursor:pointer; font-style:italic;">I</button>
-            <button id="btn-list" title="List" style="background:none; border:none; cursor:pointer;">📋</button>
-            <button id="btn-check" title="Checklist" style="background:none; border:none; cursor:pointer;">✅</button>
-            <button id="btn-mic" title="Record Audio" style="background:none; border:none; cursor:pointer; font-size:16px;">🎤</button>
+        <div class="rich-toolbar" style="display:flex; gap:10px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
+            
+            <!-- সাধারণ টুলস -->
+            <div style="display:flex; gap:5px;">
+                <button id="btn-bold" title="Bold" style="background:none; border:none; cursor:pointer; font-weight:bold; padding:5px;">B</button>
+                <button id="btn-italic" title="Italic" style="background:none; border:none; cursor:pointer; font-style:italic; padding:5px;">I</button>
+                <button id="btn-list" title="List" style="background:none; border:none; cursor:pointer; padding:5px;">📋</button>
+                <button id="btn-check" title="Checklist" style="background:none; border:none; cursor:pointer; padding:5px;">✅</button>
+                <button id="btn-mic" title="Record Audio" style="background:none; border:none; cursor:pointer; font-size:16px; padding:5px;">🎤</button>
+            </div>
+            
+            <div style="width:1px; height:20px; background:#ddd; margin:0 5px;"></div>
+            
+            <!-- AI ড্রপডাউন -->
+            <div class="ai-dropdown">
+                <button id="btn-ai" title="AI Magic">
+                    <span>🪄</span> AI Tools
+                </button>
+                
+                <div id="ai-menu">
+                    <div class="ai-option" data-task="grammar">✨ Fix Grammar</div>
+                    <div class="ai-option" data-task="summary">📝 Summarize</div>
+                    <div class="ai-option" data-task="tags">🏷️ Generate Tags</div>
+                </div>
+            </div>
+            
+            <!-- স্ট্যাটাস মেসেজ -->
             <span id="recording-status" style="font-size:12px; color:red; display:none;">Recording...</span>
+            <span id="ai-status" style="font-size:12px; color:#6366f1; display:none; font-weight:500; margin-left:5px;">Thinking...</span>
         </div>
     `;
 
@@ -259,6 +283,60 @@ export function setupNoteSaving(user) {
     document.getElementById('btn-italic')?.addEventListener('click', () => insertText('_', '_'));
     document.getElementById('btn-list')?.addEventListener('click', () => insertText('\n- ', ''));
     document.getElementById('btn-check')?.addEventListener('click', () => insertText('\n- [ ] ', ''));
+
+    // 🔥 AI Logic Implementation
+    const aiBtn = document.getElementById('btn-ai');
+    const aiMenu = document.getElementById('ai-menu');
+    const aiStatus = document.getElementById('ai-status');
+
+    if(aiBtn && aiMenu) {
+        // Toggle Menu
+        aiBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            aiMenu.style.display = aiMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!aiBtn.contains(e.target) && !aiMenu.contains(e.target)) {
+                aiMenu.style.display = 'none';
+            }
+        });
+
+        // Handle AI Options
+        document.querySelectorAll('.ai-option').forEach(opt => {
+            opt.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                aiMenu.style.display = 'none';
+                
+                const text = noteInput.value;
+                if(!text.trim()) return alert("Please write something first!");
+
+                const task = e.target.getAttribute('data-task');
+                aiStatus.style.display = 'inline';
+                aiBtn.disabled = true;
+                aiBtn.style.opacity = '0.7';
+
+                try {
+                    const result = await askAI(task, text);
+                    
+                    if(task === 'tags') {
+                        noteInput.value = text + "\n\n" + result;
+                    } else {
+                        // For grammar, replace text. For summary, append.
+                        if(task === 'grammar') noteInput.value = result;
+                        else noteInput.value = text + "\n\n**Summary:**\n" + result;
+                    }
+                } catch (err) {
+                    alert("AI Error: " + err.message);
+                } finally {
+                    aiStatus.style.display = 'none';
+                    aiBtn.disabled = false;
+                    aiBtn.style.opacity = '1';
+                }
+            });
+        });
+    }
 
     const micBtn = document.getElementById('btn-mic');
     const recStatus = document.getElementById('recording-status');
