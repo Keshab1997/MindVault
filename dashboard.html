@@ -1,45 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyBrain Dashboard</title>
-    
-    <!-- CSS লিংকসমূহ -->
-    <link rel="stylesheet" href="css/global.css">
-    <link rel="stylesheet" href="css/layout.css">
-    <link rel="stylesheet" href="css/style-profile.css">
-    <link rel="stylesheet" href="css/style-dash.css">
-    <link rel="stylesheet" href="css/footer.css">
-    <link rel="stylesheet" href="css/dark-mode.css"> 
-    
-    <!-- লাইব্রেরি (Markdown & Drag-Drop) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyBrain Dashboard</title>
+
+<!-- CSS লিংকসমূহ -->
+<link rel="stylesheet" href="css/global.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/style-profile.css">
+<link rel="stylesheet" href="css/style-dash.css">
+<link rel="stylesheet" href="css/footer.css">
+<link rel="stylesheet" href="css/dark-mode.css"> 
+
+<!-- লাইব্রেরি -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 </head>
 <body>
-
 <!-- ১. ন্যাভিগেশন বার -->
 <nav class="navbar">
+<div class="nav-content-wrapper">
+    <!-- লোগো -->
     <div class="logo-section">
         <span class="logo-icon">🧠</span>
         <span class="logo-text">MyBrain</span>
     </div>
-    
+
+    <!-- ডান পাশের আইটেম -->
     <div class="nav-right">
-        <!-- ডার্ক মোড -->
+        <!-- ডার্ক মোড টগল -->
         <button id="theme-toggle" class="btn-icon" title="Toggle Dark Mode">🌙</button>
 
         <!-- মিনি প্রোফাইল -->
         <div id="nav-mini-profile" class="nav-mini-profile" style="display: none;">
             <img id="nav-user-img" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="User" class="nav-avatar">
-    <span id="nav-user-name" class="nav-username">User</span>
-</div>
+            <span id="nav-user-name" class="nav-username">User</span>
+        </div>
 
-        <!-- হ্যামবার্গার বাটন -->
-        <button id="mobile-menu-btn" class="hamburger-btn">☰</button>
-
-        <!-- মেনু লিংকস -->
+        <!-- নেভিগেশন লিংকস -->
         <div class="nav-links" id="navLinks">
             <a href="#" class="nav-item active">
                 <span class="menu-icon">📝</span> Notes
@@ -47,67 +46,67 @@
             <a href="vault.html" class="nav-item">
                 <span class="menu-icon">🔐</span> Vault
             </a>
-            <a href="#" id="menu-logout-btn" class="nav-item logout-item">
-                <span class="menu-icon">🚪</span> Logout
-            </a>
         </div>
+
+        <!-- লগআউট বাটন -->
+        <button id="menu-logout-btn" class="btn-logout">
+            <span class="menu-icon">🚪</span> Logout
+        </button>
+
+        <!-- মোবাইল মেনু বাটন -->
+        <button id="mobile-menu-btn" class="hamburger-btn">☰</button>
     </div>
+</div>
 </nav>
 
 <div class="container">
+
+<!-- ২. ইনপুট এরিয়া -->
+<div class="input-area" style="margin-bottom: 20px;">
+    <textarea id="noteInput" placeholder="Save a note, link or idea... (supports Markdown)"></textarea>
     
-    <!-- ২. ইনপুট এরিয়া -->
-    <div class="input-area" style="margin-bottom: 20px;">
-        <textarea id="noteInput" placeholder="Save a note, link or idea... (supports Markdown)"></textarea>
-        
-        <!-- ফোল্ডার সিলেক্ট -->
-        <div class="folder-selector-wrapper" style="margin-bottom: 10px;">
-            <label style="font-size: 12px; color: #666;">Save to:</label>
-            <select id="folderSelect" class="folder-dropdown">
-                <option value="General">General</option>
-                <!-- JS দিয়ে এখানে ফোল্ডার লোড হবে -->
-            </select>
+    <div class="folder-selector-wrapper" style="margin-bottom: 10px;">
+        <label style="font-size: 12px; color: #666;">Save to:</label>
+        <select id="folderSelect" class="folder-dropdown">
+            <option value="General">General</option>
+        </select>
+    </div>
+    
+    <div class="color-palette-wrapper" style="margin: 10px 0; display: flex; gap: 10px; align-items: center;">
+        <span style="font-size: 12px; color: #666;">Color:</span>
+        <div class="color-options">
+            <input type="radio" name="noteColor" id="c-white" value="#ffffff" checked hidden>
+            <label for="c-white" class="color-circle" style="background:#ffffff; border:1px solid #ccc;" title="White"></label>
+            <input type="radio" name="noteColor" id="c-red" value="#ffcdd2" hidden>
+            <label for="c-red" class="color-circle" style="background:#ffcdd2;" title="Red"></label>
+            <input type="radio" name="noteColor" id="c-yellow" value="#fff9c4" hidden>
+            <label for="c-yellow" class="color-circle" style="background:#fff9c4;" title="Yellow"></label>
+            <input type="radio" name="noteColor" id="c-green" value="#c8e6c9" hidden>
+            <label for="c-green" class="color-circle" style="background:#c8e6c9;" title="Green"></label>
+            <input type="radio" name="noteColor" id="c-blue" value="#bbdefb" hidden>
+            <label for="c-blue" class="color-circle" style="background:#bbdefb;" title="Blue"></label>
         </div>
-        
-        <!-- কালার প্যালেট -->
-        <div class="color-palette-wrapper" style="margin: 10px 0; display: flex; gap: 10px; align-items: center;">
-            <span style="font-size: 12px; color: #666;">Color:</span>
-            <div class="color-options">
-                <input type="radio" name="noteColor" id="c-white" value="#ffffff" checked hidden>
-                <label for="c-white" class="color-circle" style="background:#ffffff; border:1px solid #ccc; width:20px; height:20px; border-radius:50%; display:inline-block; cursor:pointer;" title="White"></label>
-
-                <input type="radio" name="noteColor" id="c-red" value="#ffcdd2" hidden>
-                <label for="c-red" class="color-circle" style="background:#ffcdd2; width:20px; height:20px; border-radius:50%; display:inline-block; cursor:pointer;" title="Red"></label>
-
-                <input type="radio" name="noteColor" id="c-yellow" value="#fff9c4" hidden>
-                <label for="c-yellow" class="color-circle" style="background:#fff9c4; width:20px; height:20px; border-radius:50%; display:inline-block; cursor:pointer;" title="Yellow"></label>
-
-                <input type="radio" name="noteColor" id="c-green" value="#c8e6c9" hidden>
-                <label for="c-green" class="color-circle" style="background:#c8e6c9; width:20px; height:20px; border-radius:50%; display:inline-block; cursor:pointer;" title="Green"></label>
-
-                <input type="radio" name="noteColor" id="c-blue" value="#bbdefb" hidden>
-                <label for="c-blue" class="color-circle" style="background:#bbdefb; width:20px; height:20px; border-radius:50%; display:inline-block; cursor:pointer;" title="Blue"></label>
-            </div>
-        </div>
-
-        <!-- ইমেজ প্রিভিউ -->
-        <div id="image-preview-container" style="display: none; margin: 10px 0; position: relative; width: fit-content;">
-            <img id="image-preview" src="" alt="Selected Image" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #ddd;">
-            <button id="remove-image-btn" style="position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;">×</button>
-        </div>
-
-        <div class="input-actions">
-            <div class="action-icons">
-                <span class="action-icon" id="triggerFile" title="Add Image" style="cursor:pointer; font-size:1.2rem;">📷</span>
-            </div>
-            <input type="file" id="fileInput" accept="image/*" hidden>
-            <button id="saveBtn" class="btn btn-primary">Save to Brain</button>
-        </div>
-        <p id="uploadStatus" style="display:none; color: green; font-size: 12px; margin-top:5px;">Uploading...</p>
     </div>
 
-    <!-- ৩. ফিল্টার এবং ফোল্ডার -->
-    <div class="filter-section" style="margin-bottom: 20px;">
+    <div id="image-preview-container" style="display: none; margin: 10px 0; position: relative; width: fit-content;">
+        <img id="image-preview" src="" alt="Selected Image" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #ddd;">
+        <button id="remove-image-btn" style="position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;">×</button>
+    </div>
+
+    <div class="input-actions">
+        <div class="action-icons">
+            <span class="action-icon" id="triggerFile" title="Add Image" style="cursor:pointer; font-size:1.2rem;">📷</span>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+        <button id="saveBtn" class="btn btn-primary">Save to Brain</button>
+    </div>
+    <p id="uploadStatus" style="display:none; color: green; font-size: 12px; margin-top:5px;">Uploading...</p>
+</div>
+
+<!-- ৩. কন্ট্রোল বার (ফিল্টার এবং ফোল্ডার) -->
+<div class="control-bar-container">
+    <!-- উপরের সারি: ফিল্টার এবং সার্চ -->
+    <div class="top-controls">
         <div class="filter-wrapper">
             <button class="filter-btn active" data-filter="all">All</button>
             <button class="filter-btn" data-filter="text">📝 Notes</button> 
@@ -115,110 +114,108 @@
             <button class="filter-btn" data-filter="link">🔗 Links</button>
             <button class="filter-btn" data-filter="trash" style="color: #e74c3c;">🗑️ Trash</button> 
         </div>
-        <div class="folder-scroll-container">
-            <span style="font-size:12px; color:#666; margin-right:5px;">📁 Folders:</span>
-            <div id="custom-folder-list" class="folder-list"></div>
-            <button id="createFolderBtn" class="add-folder-btn" title="Create New Folder">+</button>
+        
+        <div class="search-and-view">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="🔍 Search notes, #tags, or links...">
+            </div>
+            
+            <!-- সিলেকশন কন্ট্রোলস -->
+            <div id="selection-controls">
+                <button id="toggleSelectModeBtn" class="select-action-btn btn-select-mode">Select</button>
+                <button id="selectAllBtn" class="select-action-btn btn-select-mode" style="display:none;">All</button>
+                <button id="deleteSelectedBtn" class="select-action-btn btn-delete-selected" style="display:none;">Delete (0)</button>
+            </div>
+
+            <div class="view-toggles">
+                <button id="gridViewBtn" class="view-btn active" title="Grid View">⊞</button>
+                <button id="listViewBtn" class="view-btn" title="List View">☰</button>
+            </div>
         </div>
     </div>
-
-    <!-- ৪. সার্চ এবং ভিউ -->
-    <div class="search-and-view" style="margin-bottom: 20px;">
-        <div class="search-wrapper">
-            <input type="text" id="searchInput" placeholder="🔍 Search notes, #tags, or links...">
-        </div>
-        <div class="view-toggles">
-            <button id="gridViewBtn" class="view-btn active" title="Grid View">⊞</button>
-            <button id="listViewBtn" class="view-btn" title="List View">☰</button>
-        </div>
+    
+    <!-- নিচের সারি: ফোল্ডারস -->
+    <div class="folder-scroll-container">
+        <span>📁 Folders:</span>
+        <div id="custom-folder-list" class="folder-list"></div>
+        <button id="createFolderBtn" class="add-folder-btn" title="Create New Folder">+</button>
     </div>
+</div>
 
-    <!-- ৫. কন্টেন্ট গ্রিড -->
-    <div id="pinned-section" class="content-section" style="display:none;">
-        <h4 class="section-title">📌 Pinned</h4>
-        <div id="pinned-grid" class="masonry-grid"></div>
-        <hr class="section-divider">
-    </div>
 
-    <div id="content-grid" class="masonry-grid">
-        <p style="text-align:center; color:#999; width:100%;">Loading your brain...</p>
-    </div>
 
+<!-- ৫. কন্টেন্ট গ্রিড -->
+<div id="pinned-section" class="content-section" style="display:none;">
+    <h4 class="section-title">📌 Pinned</h4>
+    <div id="pinned-grid" class="masonry-grid"></div>
+    <hr class="section-divider">
+</div>
+
+<div id="content-grid" class="masonry-grid">
+    <p style="text-align:center; color:#999; width:100%;">Loading your brain...</p>
+</div>
 </div>
 
 <div id="app-footer"></div>
 
-<!-- ৬. এডিট মোডাল -->
+<!-- মোডালসমূহ -->
 <div id="editModal" class="custom-modal" style="display: none;">
-    <div class="modal-content">
-        <span class="close-modal" onclick="document.getElementById('editModal').style.display='none'">&times;</span>
-        <h3>Edit Note</h3>
-        <textarea id="editNoteInput" rows="5" style="width: 100%; margin: 10px 0; padding: 10px;"></textarea>
-        <button id="updateNoteBtn" class="btn btn-primary">Update Note</button>
-    </div>
+<div class="modal-content">
+<span class="close-modal" onclick="document.getElementById('editModal').style.display='none'">&times;</span>
+<h3>Edit Note</h3>
+<textarea id="editNoteInput" rows="5" style="width: 100%; margin: 10px 0; padding: 10px;"></textarea>
+<button id="updateNoteBtn" class="btn btn-primary">Update Note</button>
+</div>
 </div>
 
-<!-- ৭. কনটেক্সট মেনু -->
 <div id="contextMenu" class="context-menu" style="display: none;">
-    <ul>
-        <li id="ctx-edit">✏️ Edit</li>
-        <li id="ctx-copy">📋 Copy</li>
-        <li id="ctx-pin">📌 Pin/Unpin</li>
-        <li id="ctx-share">📤 Share</li>
-        <li id="ctx-download">⬇️ Download</li>
-        <li id="ctx-trash" style="color:red; border-top:1px solid #eee;">🗑️ Move to Trash</li>
-    </ul>
+<ul>
+<li id="ctx-edit">✏️ Edit</li>
+<li id="ctx-copy">📋 Copy</li>
+<li id="ctx-pin">📌 Pin/Unpin</li>
+<li id="ctx-share">📤 Share</li>
+<li id="ctx-download">⬇️ Download</li>
+<li id="ctx-trash" style="color:red; border-top:1px solid #eee;">🗑️ Move to Trash</li>
+</ul>
 </div>
 
-<!-- ৮. শেয়ার মোডাল -->
 <div id="shareModal" class="custom-modal" style="display: none;">
-    <div class="modal-content share-content">
-        <span class="close-modal" onclick="document.getElementById('shareModal').style.display='none'">&times;</span>
-        <h3 style="margin-bottom:15px;">Share via</h3>
-        <div class="share-options" style="display: flex; flex-direction: column; gap: 10px;">
-            <button id="share-wa" style="padding:10px; border:none; border-radius:5px; background: #25D366; color: white; cursor:pointer;">📱 WhatsApp</button>
-            <button id="share-fb" style="padding:10px; border:none; border-radius:5px; background: #1877F2; color: white; cursor:pointer;">📘 Facebook</button>
-            <button id="share-tg" style="padding:10px; border:none; border-radius:5px; background: #0088cc; color: white; cursor:pointer;">✈️ Telegram</button>
-            <button id="share-mail" style="padding:10px; border:none; border-radius:5px; background: #ea4335; color: white; cursor:pointer;">✉️ Email</button>
-            <button id="share-copy" style="padding:10px; border:none; border-radius:5px; background: #555; color: white; cursor:pointer;">📋 Copy Link/Text</button>
-        </div>
-    </div>
+<div class="modal-content share-content">
+<span class="close-modal" onclick="document.getElementById('shareModal').style.display='none'">&times;</span>
+<h3 style="margin-bottom:15px;">Share via</h3>
+<div class="share-options">
+<button id="share-wa" style="background: #25D366; color: white;">📱 WhatsApp</button>
+<button id="share-fb" style="background: #1877F2; color: white;">📘 Facebook</button>
+<button id="share-tg" style="background: #0088cc; color: white;">✈️ Telegram</button>
+<button id="share-mail" style="background: #ea4335; color: white;">✉️ Email</button>
+<button id="share-copy" style="background: #555; color: white;">📋 Copy Link/Text</button>
+</div>
+</div>
 </div>
 
-<!-- ৯. রিডিং মোডাল -->
 <div id="readModal" class="read-modal-overlay">
-    <div class="read-modal-paper">
-        <div class="read-header">
-            <div class="read-meta">
-                <span id="readModalDate">Date</span>
-                <span id="readModalFolder" class="read-badge">Folder</span>
-            </div>
-            <button id="closeReadModalBtn" class="read-close-btn">&times;</button>
-        </div>
-        <div id="readModalContent" class="read-content"></div>
-    </div>
+<div class="read-modal-paper">
+<div class="read-header">
+<div class="read-meta">
+<span id="readModalDate">Date</span>
+<span id="readModalFolder" class="read-badge">Folder</span>
+</div>
+<button id="closeReadModalBtn" class="read-close-btn">&times;</button>
+</div>
+<div id="readModalContent" class="read-content"></div>
+</div>
 </div>
 
-<!-- ============================================== -->
-<!-- 👇 স্ক্রিপ্ট সেকশন (আপডেট করা হয়েছে) -->
-<!-- ============================================== -->
-
-<!-- ১. মেইন অ্যাপ্লিকেশন লজিক (এটি অটোমেটিক ফায়ারবেস লোড করবে) -->
 <script type="module" src="js/dashboard-core/main.js"></script>
-
-<!-- ২. অন্যান্য মডিউল -->
 <script type="module" src="js/profile-manager.js"></script>
-
-<!-- ৩. UI এবং ইউটিলিটি স্ক্রিপ্ট -->
 <script src="js/footer.js"></script>
 <script src="js/dark-mode.js"></script>
 <script src="js/menu-manager.js"></script>
 <script src="js/view-manager.js"></script>
 <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('sw.js');
+}
 </script>
-
 </body>
 </html>

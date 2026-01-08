@@ -1,681 +1,509 @@
 /* css/style-dash.css */
 
 /* ==================================================
-   ১. ইনপুট এরিয়া (Premium Look)
-   ================================================== */
+১. ইনপুট এরিয়া (Full Width & Modern)
+================================================== */
 .input-area {
-    width: 100%;
-    max-width: 900px; /* ইনপুট বক্স মাঝখানে এবং ফিক্সড সাইজ থাকবে */
-    margin: 0 auto 30px auto; /* মাঝখানে আনার জন্য */
-    background: #ffffff;
-    padding: 25px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04); /* সফট শ্যাডো */
-    border: 1px solid #f3f4f6;
-    position: relative;
-    transition: box-shadow 0.3s ease;
+width: 100%;
+max-width: 100%; /* পুরো জায়গা নেবে */
+background: #ffffff;
+padding: 25px 30px;
+border-radius: 16px;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+border: 1px solid #f3f4f6;
+position: relative;
+transition: box-shadow 0.3s ease;
+display: flex;
+flex-direction: column;
+gap: 15px;
 }
 
 .input-area:focus-within {
-    box-shadow: 0 15px 40px rgba(37, 99, 235, 0.08);
-    border-color: #bfdbfe;
+box-shadow: 0 8px 30px rgba(37, 99, 235, 0.08);
+border-color: #bfdbfe;
 }
 
+/* Rich Text Toolbar (JS দিয়ে ইনজেক্ট করা হয়) */
+.rich-toolbar {
+display: flex;
+gap: 15px;
+padding-bottom: 10px;
+border-bottom: 1px solid #f3f4f6;
+margin-bottom: 10px;
+}
+
+.rich-toolbar button {
+font-size: 16px;
+padding: 5px 10px;
+border-radius: 6px;
+transition: 0.2s;
+color: #6b7280;
+}
+
+.rich-toolbar button:hover {
+background-color: #f3f4f6;
+color: #2563eb;
+}
+
+/* Textarea */
 #noteInput {
-    width: 100%;
-    min-height: 60px;
-    border: none;
-    font-size: 17px;
-    resize: none;
-    outline: none;
-    font-family: inherit;
-    color: #1f2937;
-    background: transparent;
-    margin-bottom: 15px;
+width: 100%;
+min-height: 100px;
+border: none;
+font-size: 18px;
+resize: none;
+outline: none;
+font-family: inherit;
+color: #1f2937;
+background: transparent;
+line-height: 1.6;
 }
 
 #noteInput::placeholder {
-    color: #9ca3af;
-    font-weight: 400;
+color: #9ca3af;
+font-weight: 400;
 }
 
-/* কালার এবং ফোল্ডার সিলেকশন */
+/* ইনপুট ফুটার (Save to, Color, Button) */
+.input-actions {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-top: 10px;
+padding-top: 15px;
+border-top: 1px solid #f3f4f6;
+flex-wrap: wrap;
+gap: 15px;
+}
+
+/* বাম পাশের কন্ট্রোলস (Folder, Color, Image) */
+.input-controls-left {
+display: flex;
+align-items: center;
+gap: 20px;
+flex-wrap: wrap;
+}
+
+/* ফোল্ডার ড্রপডাউন */
 .folder-selector-wrapper {
-    display: inline-block;
-    margin-right: 15px;
+display: flex;
+align-items: center;
+gap: 8px;
 }
 
 .folder-dropdown {
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-    font-size: 13px;
-    background: #f9fafb;
-    color: #4b5563;
-    cursor: pointer;
-    outline: none;
+padding: 8px 12px;
+border-radius: 8px;
+border: 1px solid #e5e7eb;
+font-size: 14px;
+background: #f9fafb;
+color: #4b5563;
+cursor: pointer;
+outline: none;
+min-width: 120px;
 }
 
+/* কালার প্যালেট */
 .color-palette-wrapper {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.color-options {
+display: flex;
+gap: 8px;
 }
 
 .color-circle {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: transform 0.2s;
+width: 24px;
+height: 24px;
+border-radius: 50%;
+cursor: pointer;
+border: 2px solid transparent;
+transition: transform 0.2s;
+box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 input[name="noteColor"]:checked + .color-circle {
-    transform: scale(1.2);
-    border-color: #6b7280;
+transform: scale(1.2);
+border-color: #6b7280;
 }
 
-/* ইনপুট অ্যাকশন বাটন */
-.input-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #f3f4f6;
-}
-
+/* ইমেজ আইকন */
 .action-icon {
-    font-size: 22px;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 50%;
-    color: #6b7280;
-    transition: 0.2s;
-    background: #f9fafb;
+font-size: 22px;
+cursor: pointer;
+padding: 8px;
+border-radius: 50%;
+color: #6b7280;
+transition: 0.2s;
+background: #f9fafb;
+display: flex;
+align-items: center;
+justify-content: center;
 }
 
 .action-icon:hover {
-    background-color: #e5e7eb;
-    color: #2563eb;
+background-color: #e5e7eb;
+color: #2563eb;
 }
 
+/* সেভ বাটন */
 #saveBtn {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: white;
-    border: none;
-    padding: 10px 28px;
-    border-radius: 30px;
-    font-weight: 600;
-    font-size: 15px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    transition: transform 0.2s, box-shadow 0.2s;
+background: #2563eb;
+color: white;
+border: none;
+padding: 10px 30px;
+border-radius: 8px;
+font-weight: 600;
+font-size: 15px;
+cursor: pointer;
+box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+transition: transform 0.2s, background 0.2s;
 }
 
 #saveBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.4);
+background: #1d4ed8;
+transform: translateY(-2px);
 }
 
 /* ==================================================
-   ২. ফিল্টার এবং ফোল্ডার (Modern Chips & Scroll)
-   ================================================== */
-.filter-section {
-    margin-bottom: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+২. কন্ট্রোল বার (Filters, Search, View) - Full Width
+================================================== */
+.control-bar-container {
+display: flex;
+flex-direction: column;
+gap: 15px;
+margin-bottom: 25px;
 }
 
-/* ফিল্টার বাটন (All, Notes, Images...) */
+/* উপরের সারি: ফিল্টার এবং সার্চ */
+.top-controls {
+display: flex;
+justify-content: space-between;
+align-items: center;
+gap: 20px;
+flex-wrap: wrap;
+}
+
+/* ফিল্টার বাটনস */
 .filter-wrapper {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
+display: flex;
+gap: 10px;
+flex-wrap: wrap;
 }
 
 .filter-btn {
-    padding: 8px 24px;
-    border-radius: 50px;
-    border: 1px solid #e5e7eb;
-    background: #ffffff;
-    color: #4b5563;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+padding: 8px 20px;
+border-radius: 8px;
+border: 1px solid #e5e7eb;
+background: #ffffff;
+color: #4b5563;
+font-weight: 600;
+cursor: pointer;
+font-size: 14px;
+transition: all 0.2s ease;
 }
 
 .filter-btn:hover {
-    background-color: #f3f4f6;
-    transform: translateY(-2px);
+background-color: #f3f4f6;
+transform: translateY(-1px);
 }
 
 .filter-btn.active {
-    background: #2563eb;
-    color: #fff;
-    border-color: #2563eb;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+background: #2563eb;
+color: #fff;
+border-color: #2563eb;
 }
 
-/* ফোল্ডার কন্টেইনার (Horizontal Scroll) */
-.folder-scroll-container {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    max-width: 1000px; /* খুব বেশি চওড়া হবে না */
-    background: #ffffff;
-    padding: 10px 15px;
-    border-radius: 16px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-    border: 1px solid #f3f4f6;
-    overflow: hidden; /* বাইরের অংশ লুকাবে */
-}
-
-/* ফোল্ডার লেবেল */
-.folder-scroll-container > span {
-    font-size: 13px;
-    font-weight: 700;
-    color: #9ca3af;
-    margin-right: 15px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-}
-
-/* ফোল্ডার লিস্ট (স্ক্রল হবে) */
-.folder-list {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 5px; /* স্ক্রলবারের জন্য জায়গা */
-    scrollbar-width: thin; /* ফায়ারফক্সের জন্য */
-    scrollbar-color: #e5e7eb transparent;
-    scroll-behavior: smooth;
-    flex-grow: 1;
-    align-items: center;
-}
-
-/* কাস্টম স্ক্রলবার (Chrome/Safari) */
-.folder-list::-webkit-scrollbar {
-    height: 4px;
-}
-.folder-list::-webkit-scrollbar-track {
-    background: transparent;
-}
-.folder-list::-webkit-scrollbar-thumb {
-    background-color: #d1d5db;
-    border-radius: 10px;
-}
-
-/* ফোল্ডার চিপ ডিজাইন */
-.folder-chip {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #374151;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-    user-select: none;
-}
-
-.folder-chip:hover {
-    background: #eff6ff;
-    border-color: #bfdbfe;
-    color: #2563eb;
-}
-
-.folder-chip.active {
-    background: #eff6ff;
-    border-color: #2563eb;
-    color: #2563eb;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(37, 99, 235, 0.1);
-}
-
-/* ফোল্ডার আইকন */
-.folder-chip span:first-child {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-/* ডিলিট বাটন (Cross) */
-.folder-delete-btn {
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 12px;
-    color: #9ca3af;
-    transition: 0.2s;
-    margin-left: 2px;
-}
-
-.folder-delete-btn:hover {
-    background-color: #fee2e2;
-    color: #dc2626 !important;
-}
-
-/* অ্যাড ফোল্ডার বাটন (+) */
-.add-folder-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    background: #f3f4f6;
-    color: #6b7280;
-    border: 1px dashed #d1d5db;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: 0.2s;
-    flex-shrink: 0;
-    margin-left: 10px;
-}
-
-.add-folder-btn:hover {
-    background: #2563eb;
-    color: white;
-    border-color: #2563eb;
-    border-style: solid;
-}
-
-/* ==================================================
-   ৩. সার্চ বার (Floating Style)
-   ================================================== */
+/* সার্চ এবং ভিউ টগল */
 .search-and-view {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 30px;
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
+display: flex;
+align-items: center;
+gap: 15px;
+flex-grow: 1;
+justify-content: flex-end; /* ডানদিকে চাপানো */
+max-width: 600px; /* সার্চ বার খুব বেশি বড় হবে না */
 }
 
 .search-wrapper {
-    flex-grow: 1;
-    position: relative;
+flex-grow: 1;
+position: relative;
 }
 
 #searchInput {
-    width: 100%;
-    padding: 14px 25px;
-    border-radius: 50px;
-    border: none;
-    background: #ffffff;
-    font-size: 16px;
-    outline: none;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-    transition: all 0.3s ease;
+width: 100%;
+padding: 10px 20px;
+border-radius: 8px;
+border: 1px solid #e5e7eb;
+background: #ffffff;
+font-size: 15px;
+outline: none;
+box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+transition: all 0.3s ease;
 }
 
 #searchInput:focus {
-    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
-    transform: translateY(-2px);
+box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+border-color: #bfdbfe;
 }
 
+/* ভিউ টগল বাটন */
 .view-toggles {
-    background: white;
-    padding: 5px;
-    border-radius: 50px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-    display: flex;
-    align-items: center;
+background: white;
+padding: 4px;
+border-radius: 8px;
+border: 1px solid #e5e7eb;
+display: flex;
+align-items: center;
 }
 
 .view-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 18px;
-    color: #9ca3af;
-    transition: 0.2s;
+width: 36px;
+height: 36px;
+border-radius: 6px;
+border: none;
+background: transparent;
+cursor: pointer;
+font-size: 18px;
+color: #9ca3af;
+transition: 0.2s;
 }
 
 .view-btn.active {
-    background: #2563eb;
-    color: white;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+background: #eff6ff;
+color: #2563eb;
 }
+
+/* নিচের সারি: ফোল্ডারস */
+.folder-scroll-container {
+display: flex;
+align-items: center;
+width: 100%;
+background: #ffffff;
+padding: 10px 15px;
+border-radius: 12px;
+border: 1px solid #f3f4f6;
+overflow: hidden;
+}
+
+.folder-scroll-container > span {
+font-size: 13px;
+font-weight: 700;
+color: #6b7280;
+margin-right: 15px;
+white-space: nowrap;
+}
+
+.folder-list {
+display: flex;
+gap: 10px;
+overflow-x: auto;
+padding-bottom: 4px;
+scrollbar-width: none;
+scroll-behavior: smooth;
+flex-grow: 1;
+align-items: center;
+}
+.folder-list::-webkit-scrollbar { display: none; }
+
+.folder-chip {
+background: #f9fafb;
+border: 1px solid #e5e7eb;
+padding: 6px 14px;
+border-radius: 8px;
+font-size: 13px;
+font-weight: 500;
+color: #374151;
+cursor: pointer;
+transition: all 0.2s;
+display: flex;
+align-items: center;
+gap: 6px;
+white-space: nowrap;
+user-select: none;
+}
+
+.folder-chip:hover { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+.folder-chip.active { background: #eff6ff; border-color: #2563eb; color: #2563eb; font-weight: 600; }
+
+.add-folder-btn {
+width: 30px; height: 30px; border-radius: 8px; background: #f3f4f6; color: #6b7280;
+border: 1px dashed #d1d5db; font-size: 18px; display: flex; align-items: center; justify-content: center;
+cursor: pointer; transition: 0.2s; flex-shrink: 0; margin-left: 10px;
+}
+.add-folder-btn:hover { background: #2563eb; color: white; border-color: #2563eb; border-style: solid; }
 
 /* ==================================================
-   ৪. গ্রিড এবং কার্ড (Responsive Masonry)
-   ================================================= */
-.masonry-grid {
-    width: 100%;
-    column-count: 5; /* ডিফল্ট বড় স্ক্রিনে ৫ কলাম */
-    column-gap: 25px;
+৩. সিলেকশন কন্ট্রোলস
+================================================== */
+#selection-controls {
+display: none;
+gap: 10px;
+align-items: center;
+margin-left: 10px;
 }
 
-/* রেসপনসিভ ব্রেকপয়েন্ট */
+.select-action-btn {
+padding: 8px 16px;
+border-radius: 8px;
+border: none;
+font-weight: 600;
+cursor: pointer;
+font-size: 13px;
+transition: 0.2s;
+}
+
+.btn-select-mode { background: #f3f4f6; color: #374151; }
+.btn-select-mode:hover { background: #e5e7eb; }
+.btn-select-mode.active { background: #2563eb; color: white; }
+
+.btn-delete-selected { background: #fee2e2; color: #dc2626; }
+.btn-delete-selected:hover { background: #fecaca; }
+
+/* ==================================================
+৪. গ্রিড এবং কার্ড (Masonry Layout)
+================================================== */
+.masonry-grid {
+column-count: 5; /* বড় স্ক্রিনে ৫ কলাম */
+column-gap: 20px;
+width: 100%;
+margin: 0 auto;
+}
+
 @media (max-width: 1600px) { .masonry-grid { column-count: 4; } }
-@media (max-width: 1300px) { .masonry-grid { column-count: 3; } }
+@media (max-width: 1200px) { .masonry-grid { column-count: 3; } }
 @media (max-width: 900px) { .masonry-grid { column-count: 2; } }
 @media (max-width: 600px) { .masonry-grid { column-count: 1; } }
 
 /* কার্ড ডিজাইন */
 .note-card {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.04); /* খুব হালকা শ্যাডো */
-    border: 1px solid rgba(0,0,0,0.02);
-    break-inside: avoid;
-    display: inline-block;
-    width: 100%;
-    box-sizing: border-box;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    position: relative;
-    overflow: hidden;
+background: #ffffff;
+border-radius: 12px;
+padding: 15px;
+box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+border: 1px solid rgba(0,0,0,0.03);
+transition: transform 0.2s, box-shadow 0.2s;
+position: relative;
+overflow: hidden;
+display: inline-block;
+width: 100%;
+margin-bottom: 20px;
+break-inside: avoid;
+vertical-align: top;
 }
 
 .note-card:hover {
-    transform: translateY(-6px); /* হোভার করলে উপরে উঠবে */
-    box-shadow: 0 15px 35px rgba(0,0,0,0.1); /* শ্যাডো বাড়বে */
-    z-index: 10;
+transform: translateY(-4px);
+box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+z-index: 5;
 }
 
-/* কার্ডের ভেতরের কন্টেন্ট */
-.note-card img {
-    border-radius: 12px;
-    margin-bottom: 12px;
-    width: 100%;
-    display: block;
+/* Multi-Select Checkbox */
+.card-select-checkbox {
+position: absolute;
+top: 10px;
+left: 10px;
+width: 18px;
+height: 18px;
+z-index: 20;
+cursor: pointer;
+display: none;
+accent-color: #2563eb;
+}
+.selection-mode .card-select-checkbox { display: block; }
+.note-card.selected { border: 2px solid #2563eb; background-color: #eff6ff !important; }
+
+/* কার্ডের ভেতরের ইমেজ এবং আইফ্রেম */
+.note-card img,
+.note-card iframe,
+.note-card video {
+border-radius: 8px;
+margin-bottom: 10px;
+width: 100% !important;
+display: block;
+max-width: 100%;
 }
 
+/* টেক্সট স্টাইল */
 .note-text {
-    font-size: 15px;
-    color: #374151;
-    line-height: 1.6;
+font-size: 14px;
+color: #374151;
+line-height: 1.5;
+margin-bottom: 5px;
+word-wrap: break-word;
 }
-
-.note-text a {
-    color: #2563eb;
-    text-decoration: none;
-    font-weight: 500;
-}
+.note-text a { color: #2563eb; text-decoration: none; font-weight: 500; }
 
 /* পিন আইকন */
 .pin-indicator {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(4px);
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    z-index: 5;
+position: absolute; top: 10px; right: 10px;
+background: rgba(255, 255, 255, 0.8);
+backdrop-filter: blur(2px); border-radius: 50%;
+width: 24px; height: 24px;
+display: flex; align-items: center; justify-content: center; font-size: 12px;
+box-shadow: 0 1px 4px rgba(0,0,0,0.1); z-index: 6;
 }
 
-/* কার্ড ফুটার */
+/* ফুটার */
 .card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 15px;
-    padding-top: 12px;
-    border-top: 1px solid #f3f4f6;
+display: flex; justify-content: space-between; align-items: center;
+margin-top: 10px;
+padding-top: 10px; border-top: 1px solid #f3f4f6;
 }
+.card-date { font-size: 10px; color: #9ca3af; font-weight: 500; }
 
-.card-date {
-    font-size: 11px;
-    color: #9ca3af;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.delete-btn {
-    color: #9ca3af;
-    font-size: 20px;
-    padding: 0 5px;
-    transition: 0.2s;
-}
-
-.delete-btn:hover {
-    color: #1f2937;
-    transform: scale(1.1);
-}
+.delete-btn { color: #9ca3af; font-size: 18px; padding: 0 5px; transition: 0.2s; }
+.delete-btn:hover { color: #1f2937; }
 
 /* List View Style */
 .masonry-grid.list-view {
-    column-count: 1 !important;
-    max-width: 900px;
-    margin: 0 auto;
+display: flex;
+flex-direction: column;
+max-width: 900px;
+margin: 0 auto;
+column-count: 1 !important;
 }
-
-.masonry-grid.list-view .note-card {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 20px;
-}
+.masonry-grid.list-view .note-card { margin-bottom: 15px; }
 
 /* ==================================================
-   ৫. অন্যান্য সেকশন (Pin, Divider)
-   ================================================= */
-.section-title {
-    font-size: 16px;
-    color: #65676b;
-    margin: 20px 0 10px 5px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
+৫. অন্যান্য সেকশন
+================================================== */
+.section-title { font-size: 15px; color: #65676b; margin: 20px 0 10px 5px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+.section-divider { border: 0; border-top: 1px solid #e1e3e8; margin: 20px 0; }
 
-.section-divider {
-    border: 0;
-    border-top: 1px solid #e1e3e8;
-    margin: 20px 0;
-}
+/* মোডাল স্টাইল */
+.custom-modal { position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+.modal-content { background-color: #fff; padding: 20px; border-radius: 12px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: slideIn 0.2s ease; }
+@keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; color: #aaa; cursor: pointer; }
+.close-modal:hover { color: #000; }
 
-/* ==================================================
-   ৬. সকল মোডাল (All Modals)
-   ================================================= */
-/* বেসিক মোডাল স্টাইল (Edit & Share) */
-.custom-modal {
-    position: fixed;
-    z-index: 3000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(2px);
-}
-
-.modal-content {
-    background-color: #fff;
-    padding: 25px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
-    position: relative;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.close-modal {
-    position: absolute;
-    right: 20px;
-    top: 15px;
-    font-size: 28px;
-    color: #aaa;
-    cursor: pointer;
-    font-weight: bold;
-    z-index: 10;
-}
-
-.close-modal:hover {
-    color: #000;
-}
-
-.modal-content h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: #1c1e21;
-}
-
-/* রিডিং মোডাল (Reading Modal) */
-.read-modal-overlay {
-    display: none; 
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.6); z-index: 3500;
-    justify-content: center; align-items: center;
-    backdrop-filter: blur(5px);
-}
-.read-modal-paper {
-    background: #fff; width: 90%; max-width: 700px; height: 85vh;
-    border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    display: flex; flex-direction: column; overflow: hidden;
-    position: relative; animation: slideUp 0.3s ease-out;
-}
+/* রিডিং মোডাল */
+.read-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 3500; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+.read-modal-paper { background: #fff; width: 90%; max-width: 700px; height: 85vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; position: relative; animation: slideUp 0.3s ease-out; }
 @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-.read-header {
-    padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9;
-}
+.read-header { padding: 12px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; }
 .read-meta { font-size: 12px; color: #666; display: flex; gap: 10px; align-items: center; }
 .read-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
 .read-close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #555; }
-
-.read-content {
-    padding: 30px; overflow-y: auto; font-family: 'Georgia', serif; 
-    font-size: 18px; line-height: 1.8; color: #2d2d2d; flex: 1;
-}
+.read-content { padding: 25px; overflow-y: auto; font-family: 'Georgia', serif; font-size: 17px; line-height: 1.7; color: #2d2d2d; flex: 1; }
 .read-content img { max-width: 100%; border-radius: 8px; margin: 15px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-.read-content a { color: #007bff; text-decoration: underline; }
-.read-content blockquote { border-left: 4px solid #007bff; padding-left: 15px; color: #555; font-style: italic; margin: 20px 0; }
 
-/* শেয়ার মোডাল স্টাইল (Share Modal) */
-.share-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-}
-.share-options {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    width: 100%;
-    max-width: 400px;
-}
-.share-options button {
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-.share-options button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
+/* শেয়ার মোডাল */
+.share-content { display: flex; flex-direction: column; align-items: center; padding: 20px; }
+.share-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: 350px; }
+.share-options button { padding: 10px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: transform 0.1s; }
+.share-options button:hover { transform: translateY(-2px); }
 
-/* ==================================================
-   ৭. কনটেক্সট মেনু (Right Click Menu)
-   ================================================= */
-.context-menu {
-    position: absolute;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2); /* শ্যাডো একটু গাঢ় করা হলো */
-    width: 160px;
-    z-index: 9999; /* অনেক বড় মান দেওয়া হলো */
-    overflow: hidden;
-    border: 1px solid #e1e3e8;
-    animation: fadeIn 0.1s ease;
-    display: none; /* ডিফল্ট হাইড */
-}
+/* কনটেক্সট মেনু */
+.context-menu { position: absolute; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 150px; z-index: 9999; overflow: hidden; border: 1px solid #e1e3e8; animation: fadeIn 0.1s ease; display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.context-menu ul { list-style: none; margin: 0; padding: 0; }
+.context-menu li { padding: 8px 12px; cursor: pointer; font-size: 13px; color: #1c1e21; border-bottom: 1px solid #f7f8fa; display: flex; align-items: center; gap: 8px; }
+.context-menu li:last-child { border-bottom: none; }
+.context-menu li:hover { background-color: #f0f2f5; }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.context-menu ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.context-menu li {
-    padding: 10px 15px;
-    cursor: pointer;
-    font-size: 14px;
-    color: #1c1e21;
-    border-bottom: 1px solid #f7f8fa;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.context-menu li:last-child {
-    border-bottom: none;
-}
-
-.context-menu li:hover {
-    background-color: #f0f2f5;
-}
-
-/* ==================================================
-   ৮. ফোল্ডার এবং ড্র্যাগ হ্যান্ডেল (Folders & Utils)
-   ================================================= */
-/* Drag Handle */
-.drag-handle {
-    cursor: grab;
-    color: #ccc;
-    font-size: 18px;
-    padding: 5px;
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    z-index: 10;
-    touch-action: none;
-}
-.drag-handle:active {
-    cursor: grabbing;
-    color: #1877f2;
-}
+.drag-handle { cursor: grab; color: #ccc; font-size: 16px; padding: 5px; position: absolute; top: 5px; left: 5px; z-index: 10; touch-action: none; }
+.drag-handle:active { cursor: grabbing; color: #1877f2; }

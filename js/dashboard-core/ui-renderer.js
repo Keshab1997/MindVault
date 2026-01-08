@@ -1,5 +1,5 @@
 import { getUniversalEmbedHTML } from "./utils.js";
-import { updateNoteContentDB } from "./firebase-service.js"; // চেকলিস্ট আপডেটের জন্য
+import { updateNoteContentDB } from "./firebase-service.js";
 
 // Generate Note Card HTML Object
 export function createNoteCardElement(docSnap, isTrashView, callbacks) {
@@ -10,7 +10,14 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
     card.setAttribute('data-id', id);
     if(data.color) card.style.backgroundColor = data.color;
 
-    // 1. Pin & Drag Handle
+    // 🔥 1. Multi-Select Checkbox (New)
+    const selectCheckbox = document.createElement('input');
+    selectCheckbox.type = 'checkbox';
+    selectCheckbox.className = 'card-select-checkbox';
+    selectCheckbox.setAttribute('data-id', id);
+    card.appendChild(selectCheckbox);
+
+    // 2. Pin & Drag Handle
     if(!isTrashView) {
         const dragIcon = document.createElement('div');
         dragIcon.className = 'drag-handle';
@@ -24,7 +31,7 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         }
     }
 
-    // 2. Folder Badge
+    // 3. Folder Badge
     if(data.folder && !isTrashView) {
         const folderBadge = document.createElement('span');
         folderBadge.style.cssText = "position:absolute; top:12px; right:40px; background:rgba(0,0,0,0.05); font-size:11px; padding:4px 8px; border-radius:12px; color:#666; font-weight:500; pointer-events:none;";
@@ -32,10 +39,10 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         card.appendChild(folderBadge);
     }
 
-    // 3. Content Generation
+    // 4. Content Generation
     let contentHTML = '';
 
-    // A. Audio Player 🎤
+    // A. Audio Player
     if (data.type === 'audio' && data.fileUrl) {
         contentHTML += `
             <div style="margin-bottom:10px;">
@@ -51,7 +58,7 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         contentHTML += `<img src="${data.fileUrl || data.image}" loading="lazy" style="width:100%; border-radius: 8px; display:block; margin-bottom:5px;">`;
         if(data.text) contentHTML += generateTextHTML(data.text, id);
     } 
-    // C. Link Preview (General Links)
+    // C. Link Preview
     else if (data.type === 'link' && (data.title || data.metaTitle) && !getUniversalEmbedHTML(data.text)) {
         const title = data.title || data.metaTitle || data.text;
         const img = data.image || data.metaImg;
@@ -65,27 +72,22 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
             </div>
         </a>`;
     } 
-    // D. Text / Checklist / Embed (YouTube, FB, Insta)
+    // D. Text / Embed
     else {
         const mediaEmbed = getUniversalEmbedHTML(data.text);
         if (mediaEmbed) {
-            // ১. ভিডিও প্লেয়ার
             contentHTML += mediaEmbed;
-            
-            // ২. ভিডিওর টাইটেল বা নাম (Name) - নতুন সংযোজন
             const videoTitle = data.title || data.metaTitle;
             if(videoTitle) {
                 contentHTML += `<div style="margin-top:10px; margin-bottom:5px; font-weight:600; font-size:15px; color:#1f2937; line-height:1.4;">${videoTitle}</div>`;
             }
-
-            // ৩. অরিজিনাল লিংক বাটন
             contentHTML += `<div style="text-align:right; margin-bottom:5px;"><a href="${data.text}" target="_blank" style="font-size:11px; color:#888; text-decoration:none;">🔗 Open Original Link</a></div>`;
         } else {
             contentHTML += generateTextHTML(data.text || '', id);
         }
     }
 
-    // 4. Tags Display 🏷️ (ভিডিও বা টেক্সটের নিচে ট্যাগ দেখাবে)
+    // 5. Tags
     if (data.tags && data.tags.length > 0) {
         contentHTML += `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:5px; padding-top:5px; border-top:1px dashed rgba(0,0,0,0.05);">`;
         data.tags.forEach(tag => {
@@ -94,7 +96,7 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         contentHTML += `</div>`;
     }
 
-    // 5. Footer & Actions
+    // 6. Footer
     contentHTML += `<div class="card-footer" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid rgba(0,0,0,0.05);">
         <small class="card-date" style="font-size:11px; color:#999;">${data.timestamp?.toDate().toLocaleDateString() || ''}</small>`;
 
@@ -109,32 +111,22 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
     contentWrapper.innerHTML = contentHTML;
     card.appendChild(contentWrapper);
 
-    // 6. Event Listeners
-
-    // Checklist Click Event (Interactive)
+    // 7. Event Listeners
     const checkboxes = card.querySelectorAll('.task-checkbox');
     checkboxes.forEach(box => {
         box.addEventListener('change', async (e) => {
             e.stopPropagation();
             const index = parseInt(e.target.dataset.index);
             const isChecked = e.target.checked;
-            
-            // টেক্সট আপডেট লজিক
             let lines = data.text.split('\n');
             let currentLine = lines[index];
-            
-            if (isChecked) {
-                lines[index] = currentLine.replace('- [ ]', '- [x]');
-            } else {
-                lines[index] = currentLine.replace('- [x]', '- [ ]');
-            }
-            
+            if (isChecked) lines[index] = currentLine.replace('- [ ]', '- [x]');
+            else lines[index] = currentLine.replace('- [x]', '- [ ]');
             const newText = lines.join('\n');
             await updateNoteContentDB(id, newText);
         });
     });
 
-    // Trash Actions
     if(isTrashView) {
         const actionsDiv = card.querySelector('.trash-actions');
         if(actionsDiv) {
@@ -164,34 +156,44 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         });
     }
 
+    // 🔥 Checkbox Click Event (Selection Logic)
+    selectCheckbox.addEventListener('change', (e) => {
+        e.stopPropagation();
+        if(e.target.checked) {
+            card.classList.add('selected');
+            callbacks.onSelect(id, true);
+        } else {
+            card.classList.remove('selected');
+            callbacks.onSelect(id, false);
+        }
+    });
+
+    // কার্ডে ক্লিক করলে যদি সিলেকশন মোড অন থাকে তবে সিলেক্ট হবে
+    card.addEventListener('click', (e) => {
+        if(document.body.classList.contains('selection-mode') && !e.target.closest('button') && !e.target.closest('a') && !e.target.closest('.task-checkbox')) {
+            selectCheckbox.checked = !selectCheckbox.checked;
+            selectCheckbox.dispatchEvent(new Event('change'));
+        }
+    });
+
     return card;
 }
 
-// Text Helper (Markdown + Checklist)
 function generateTextHTML(text, noteId) {
     if (!text) return "";
-
-    // Checklist Parsing
     if (text.includes('- [ ]') || text.includes('- [x]')) {
         let lines = text.split('\n');
         let html = '<div class="checklist-container" style="text-align:left;">';
         let hasChecklist = false;
-
         lines.forEach((line, index) => {
             if (line.trim().startsWith('- [ ]')) {
                 hasChecklist = true;
                 const content = line.replace('- [ ]', '').trim();
-                html += `<div style="display:flex; align-items:center; margin-bottom:4px;">
-                            <input type="checkbox" class="task-checkbox" data-index="${index}" style="margin-right:8px; cursor:pointer;">
-                            <span style="font-size:14px;">${content}</span>
-                         </div>`;
+                html += `<div style="display:flex; align-items:center; margin-bottom:4px;"><input type="checkbox" class="task-checkbox" data-index="${index}" style="margin-right:8px; cursor:pointer;"><span style="font-size:14px;">${content}</span></div>`;
             } else if (line.trim().startsWith('- [x]')) {
                 hasChecklist = true;
                 const content = line.replace('- [x]', '').trim();
-                html += `<div style="display:flex; align-items:center; margin-bottom:4px;">
-                            <input type="checkbox" class="task-checkbox" data-index="${index}" checked style="margin-right:8px; cursor:pointer;">
-                            <span style="font-size:14px; text-decoration:line-through; color:#999;">${content}</span>
-                         </div>`;
+                html += `<div style="display:flex; align-items:center; margin-bottom:4px;"><input type="checkbox" class="task-checkbox" data-index="${index}" checked style="margin-right:8px; cursor:pointer;"><span style="font-size:14px; text-decoration:line-through; color:#999;">${content}</span></div>`;
             } else {
                 html += `<div style="margin-bottom:4px;">${marked.parse(line)}</div>`;
             }
@@ -199,20 +201,13 @@ function generateTextHTML(text, noteId) {
         html += '</div>';
         if(hasChecklist) return html;
     }
-
-    // Normal Markdown
     let parsedText = text;
-    if (typeof marked !== 'undefined') {
-        try { parsedText = marked.parse(text); } catch (e) { console.error(e); }
-    }
-
+    if (typeof marked !== 'undefined') { try { parsedText = marked.parse(text); } catch (e) { console.error(e); } }
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = parsedText;
     const plainText = tempDiv.textContent || "";
-
     if (plainText.length > 250) {
-        return `<div class="note-text" style="overflow:hidden; max-height:100px; mask-image: linear-gradient(180deg, #000 60%, transparent);">${parsedText}</div>
-                <button class="read-more-btn" style="color:#007bff; border:none; background:none; padding:0; cursor:pointer; font-size:13px; margin-top:5px; font-weight:bold;">Read More...</button>`;
+        return `<div class="note-text" style="overflow:hidden; max-height:100px; mask-image: linear-gradient(180deg, #000 60%, transparent);">${parsedText}</div><button class="read-more-btn" style="color:#007bff; border:none; background:none; padding:0; cursor:pointer; font-size:13px; margin-top:5px; font-weight:bold;">Read More...</button>`;
     }
     return `<div class="note-text">${parsedText}</div>`;
 }
