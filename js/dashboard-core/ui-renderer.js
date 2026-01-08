@@ -31,11 +31,26 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         }
     }
 
-    // 3. Folder Badge
+    // 🔥 3. Folder Badge (FIXED: No Overlap)
+    // আগে এটি absolute ছিল, এখন এটি relative করা হয়েছে যাতে টেক্সট নিচে নেমে যায়।
     if(data.folder && !isTrashView) {
-        const folderBadge = document.createElement('span');
-        folderBadge.style.cssText = "position:absolute; top:12px; right:40px; background:rgba(0,0,0,0.05); font-size:11px; padding:4px 8px; border-radius:12px; color:#666; font-weight:500; pointer-events:none;";
-        folderBadge.innerText = data.folder;
+        const folderBadge = document.createElement('div');
+        folderBadge.style.cssText = `
+            display: inline-block;
+            background: rgba(0,0,0,0.06);
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            border: 1px solid rgba(0,0,0,0.05);
+            max-width: 80%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        `;
+        folderBadge.innerText = `📁 ${data.folder}`;
         card.appendChild(folderBadge);
     }
 
