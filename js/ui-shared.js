@@ -1,6 +1,25 @@
 // js/ui-shared.js
 // এই ফাইলে Footer, Dark Mode, Menu এবং View Toggle এর সব লজিক একসাথে আছে।
 
+// 🔥 Toast Notification System
+export function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.style.cssText = `
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        padding: 12px 25px; border-radius: 50px; color: white; z-index: 10000;
+        font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 14px;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        animation: slideUp 0.3s ease-out;
+    `;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideDown 0.3s ease-in';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     
     // ১. ফুটার (Footer) সেটআপ
@@ -54,18 +73,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // ৩. মোবাইল মেনু (Mobile Menu)
     const menuBtn = document.getElementById('mobile-menu-btn');
     const navLinks = document.getElementById('navLinks');
+    const desktopLogout = document.getElementById('desktop-logout-btn');
+    const mobileLogout = document.getElementById('menu-logout-btn');
 
     if (menuBtn && navLinks) {
         menuBtn.addEventListener('click', (e) => {
             navLinks.classList.toggle('active');
-            menuBtn.innerHTML = navLinks.classList.contains('active') ? '✕' : '☰';
             e.stopPropagation();
         });
 
         document.addEventListener('click', (e) => {
             if (!menuBtn.contains(e.target) && !navLinks.contains(e.target)) {
                 navLinks.classList.remove('active');
-                menuBtn.innerHTML = '☰';
             }
         });
 
@@ -73,9 +92,23 @@ document.addEventListener('DOMContentLoaded', () => {
         links.forEach(link => {
             link.addEventListener('click', () => {
                 navLinks.classList.remove('active');
-                menuBtn.innerHTML = '☰';
             });
         });
+    }
+
+    // Logout handlers
+    if (desktopLogout) {
+        desktopLogout.addEventListener('click', handleLogout);
+    }
+    if (mobileLogout) {
+        mobileLogout.addEventListener('click', handleLogout);
+    }
+
+    function handleLogout(e) {
+        e.preventDefault();
+        if (typeof auth !== 'undefined' && typeof signOut !== 'undefined') {
+            signOut(auth).then(() => window.location.href = 'index.html');
+        }
     }
 
     // ৪. ভিউ টগল (Grid/List View)

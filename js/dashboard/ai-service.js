@@ -2,41 +2,31 @@
 // Simple text processing fallback system
 
 export async function askAI(taskType, text) {
-    if (!text || text.trim().length < 3) {
-        throw new Error("Text is too short for AI processing.");
+    if (!text || text.trim().length < 5) {
+        throw new Error("লেখাটি খুবই ছোট!");
     }
 
-    console.log("🤖 Processing with AI...");
-    
     try {
-        // DuckDuckGo AI চেষ্টা করা হচ্ছে
         const response = await fetch('https://duckduckgo.com/duckchat/v1/chat', {
             method: 'POST',
-            headers: {
+            headers: { 
                 'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (compatible)'
+                'x-vqd-accept': '1'
             },
             body: JSON.stringify({
-                model: 'claude-instant',
-                messages: [{
-                    role: 'user', 
-                    content: getPrompt(taskType, text)
-                }]
+                model: 'gpt-4o-mini',
+                messages: [{ role: 'user', content: getPrompt(taskType, text) }]
             })
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.message) {
-                return data.message.trim();
-            }
-        }
+        if (!response.ok) throw new Error("AI Busy");
+        
+        const data = await response.json();
+        return data.message || processWithFallback(taskType, text);
     } catch (error) {
-        console.log('DuckDuckGo AI unavailable, using fallback');
+        console.warn('AI Fetch failed, using local logic');
+        return processWithFallback(taskType, text);
     }
-
-    // Fallback: Simple text processing
-    return processWithFallback(taskType, text);
 }
 
 function getPrompt(taskType, text) {

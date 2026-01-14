@@ -228,3 +228,14 @@ padding: 5px;
 
 /* মোবাইলে লগআউট বাটন মেনুর ভেতরে দেখানোর জন্য JS লজিক লাগবে, অথবা আলাদা স্টাইল */
 }
+
+/* 🔥 Toast Animations */
+@keyframes slideUp {
+    from { opacity: 0; transform: translate(-50%, 20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes slideDown {
+    from { opacity: 1; transform: translate(-50%, 0); }
+    to { opacity: 0; transform: translate(-50%, 20px); }
+}

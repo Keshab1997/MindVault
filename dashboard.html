@@ -5,74 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MyBrain Dashboard</title>
 
-<!-- Favicon -->
 <link rel="icon" href="https://img.icons8.com/fluency/48/brain.png" type="image/png">
-
-<!-- PWA Manifest Link -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2563eb">
 
-<!-- CSS লিংকসমূহ -->
+<!-- Preconnect for faster loading -->
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://api.cloudinary.com">
+<link rel="dns-prefetch" href="https://www.gstatic.com">
+
 <link rel="stylesheet" href="css/global.css">
 <link rel="stylesheet" href="css/layout.css">
 <link rel="stylesheet" href="css/style-profile.css">
 <link rel="stylesheet" href="css/style-dash.css">
 <link rel="stylesheet" href="css/footer.css">
 <link rel="stylesheet" href="css/dark-mode.css">
-
-<!-- Highlight.js CSS (VS Code Theme) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"> 
 </head>
 <body>
-<!-- ১. ন্যাভিগেশন বার -->
 <nav class="navbar">
 <div class="nav-content-wrapper">
-    <!-- লোগো -->
-    <div class="logo-section">
+    <div class="logo-section" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">
         <span class="logo-icon">🧠</span>
         <span class="logo-text">MyBrain</span>
     </div>
 
-    <!-- ডান পাশের আইটেম -->
     <div class="nav-right">
-        <!-- Install Button (Hidden by default) -->
-        <button id="pwa-install-btn" class="btn-primary" style="display: none; padding: 5px 10px; font-size: 0.8rem; margin-right: 10px;">
-            📲 Install App
-        </button>
+        <button id="pwa-install-btn" class="btn-install" style="display:none;">📲 Install</button>
+        <button id="theme-toggle" class="btn-icon">🌙</button>
 
-        <!-- ডার্ক মোড টগল -->
-        <button id="theme-toggle" class="btn-icon" title="Toggle Dark Mode">🌙</button>
-
-        <!-- মিনি প্রোফাইল -->
-        <div id="nav-mini-profile" class="nav-mini-profile" style="display: none;">
+        <div id="nav-mini-profile" class="nav-mini-profile">
             <img id="nav-user-img" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="User" class="nav-avatar">
             <span id="nav-user-name" class="nav-username">User</span>
         </div>
 
-        <!-- নেভিগেশন লিংকস -->
+        <button id="mobile-menu-btn" class="hamburger-btn">☰</button>
+
         <div class="nav-links" id="navLinks">
-            <a href="#" class="nav-item active">
-                <span class="menu-icon">📝</span> Notes
-            </a>
-            <a href="vault.html" class="nav-item">
-                <span class="menu-icon">🔐</span> Vault
-            </a>
+            <a href="dashboard.html" class="nav-item active">📝 Notes</a>
+            <a href="vault.html" class="nav-item">🔐 Vault</a>
+            <button id="menu-logout-btn" class="btn-logout-nav">🚪 Logout</button>
         </div>
 
-        <!-- লগআউট বাটন -->
-        <button id="menu-logout-btn" class="btn-logout">
+        <button id="desktop-logout-btn" class="btn-logout">
             <span class="menu-icon">🚪</span> Logout
         </button>
-
-        <!-- মোবাইল মেনু বাটন -->
-        <button id="mobile-menu-btn" class="hamburger-btn">☰</button>
     </div>
 </div>
 </nav>
 
 <div class="container">
 
-<!-- ২. ইনপুট এরিয়া -->
 <div class="input-area" style="margin-bottom: 20px;">
     <textarea id="noteInput" placeholder="Save a note, link or idea... (supports Markdown)"></textarea>
     
@@ -114,9 +97,7 @@
     <p id="uploadStatus" style="display:none; color: green; font-size: 12px; margin-top:5px;">Uploading...</p>
 </div>
 
-<!-- ৩. কন্ট্রোল বার (ফিল্টার এবং ফোল্ডার) -->
 <div class="control-bar-container">
-    <!-- উপরের সারি: ফিল্টার এবং সার্চ -->
     <div class="top-controls">
         <div class="filter-wrapper">
             <button class="filter-btn active" data-filter="all">All</button>
@@ -131,7 +112,6 @@
                 <input type="text" id="searchInput" placeholder="🔍 Search...">
             </div>
             
-            <!-- সিলেকশন কন্ট্রোলস -->
             <div id="selection-controls" style="display: flex; gap: 5px;">
                 <button id="toggleSelectModeBtn" class="select-action-btn btn-select-mode">Select</button>
                 <button id="selectAllBtn" class="select-action-btn btn-select-mode" style="display:none;">All</button>
@@ -145,7 +125,6 @@
         </div>
     </div>
     
-    <!-- নিচের সারি: ফোল্ডারস -->
     <div class="folder-scroll-container">
         <span>📁 Folders:</span>
         <div id="custom-folder-list" class="folder-list"></div>
@@ -153,7 +132,6 @@
     </div>
 </div>
 
-<!-- ৫. কন্টেন্ট গ্রিড -->
 <div id="pinned-section" class="content-section" style="display:none;">
     <h4 class="section-title">📌 Pinned</h4>
     <div id="pinned-grid" class="masonry-grid"></div>
@@ -167,7 +145,6 @@
 
 <div id="app-footer"></div>
 
-<!-- মোডালসমূহ -->
 <div id="editModal" class="custom-modal" style="display: none;">
 <div class="modal-content">
 <span class="close-modal" onclick="document.getElementById('editModal').style.display='none'">&times;</span>
@@ -215,28 +192,21 @@
 </div>
 </div>
 
-<!-- ১. লাইব্রেরি -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
-<!-- ২. অ্যাপ লজিক (পাথ আপডেট করা হয়েছে) -->
 <script type="module" src="js/dashboard/main.js"></script> 
 <script type="module" src="js/profile-manager.js"></script>
+<script type="module" src="js/ui-shared.js"></script>
 
-<!-- ৩. UI এবং ইউটিলিটি (সব ছোট ফাইল এখন এক জায়গায়) -->
-<script src="js/ui-shared.js"></script>
-
-<!-- PWA Logic Script -->
 <script>
-    // ১. Service Worker Register
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js');
     }
 
-    // ২. Install Button Logic (FIXED)
     let deferredPrompt;
     const installBtn = document.getElementById('pwa-install-btn');
 
@@ -256,7 +226,6 @@
         });
     }
 
-    // ৩. Share Target Logic (সোশ্যাল মিডিয়া থেকে লিংক রিসিভ করার জন্য)
     window.addEventListener('DOMContentLoaded', () => {
         const parsedUrl = new URL(window.location);
         const title = parsedUrl.searchParams.get('title');
@@ -273,7 +242,6 @@
 
             if (content.trim() !== '') {
                 noteInput.value = content.trim();
-                // ফোকাস করুন যাতে ইউজার বুঝতে পারে
                 noteInput.focus();
             }
         }

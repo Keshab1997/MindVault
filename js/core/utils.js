@@ -79,17 +79,35 @@ export function getUniversalEmbedHTML(text) {
     // Facebook
     if (url.includes('facebook.com') || url.includes('fb.watch')) {
         try {
-            let cleanUrl = url.replace('m.facebook.com', 'www.facebook.com');
+            let cleanUrl = url.split('?')[0];
+            cleanUrl = cleanUrl.replace('m.facebook.com', 'www.facebook.com');
             const encodedUrl = encodeURIComponent(cleanUrl);
+            
             if (url.includes('/videos/') || url.includes('/reel/') || url.includes('/watch') || url.includes('fb.watch')) {
-                return `<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-bottom:10px; background: #000;">
-                        <iframe src="https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false&t=0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" scrolling="no" frameborder="0" allowfullscreen="true"></iframe></div>`;
+                return `<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-bottom:10px;">
+                        <iframe src="https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false" 
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+                            allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+                        </div>`;
             }
-            return `<div style="overflow: hidden; border-radius: 8px; margin-bottom:10px; background: #fff; border:1px solid #e0e0e0;">
-                    <iframe src="https://www.facebook.com/plugins/post.php?href=${encodedUrl}&show_text=true&width=500" width="100%" height="500" style="border:none;overflow:hidden" scrolling="yes" frameborder="0" allowfullscreen="true"></iframe>
+            return `<div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #fff; margin-bottom: 10px;">
+                    <iframe src="https://www.facebook.com/plugins/post.php?href=${encodedUrl}&show_text=true&width=500" 
+                        width="100%" height="500" style="border:none; overflow:hidden" 
+                        scrolling="no" frameborder="0" allowfullscreen="true" 
+                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
                     </div>`;
         } catch (e) { return null; }
     }
     
     return null;
+}
+
+// ৭. Cloudinary Image Optimization
+export function optimizeCloudinaryUrl(url) {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    
+    if (url.includes('/upload/')) {
+        return url.replace('/upload/', '/upload/f_auto,q_auto,w_600/');
+    }
+    return url;
 }

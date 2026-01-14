@@ -4,7 +4,8 @@ import * as DBService from "../core/firebase-service.js";
 import * as UI from "./ui-renderer.js";
 import * as Utils from "../core/utils.js";
 import { openContextMenu, openReadModal } from "./menu-manager.js";
-import { askAI } from "./ai-service.js"; // 🔥 AI Service Import
+import { askAI } from "./ai-service.js";
+import { showToast } from "../ui-shared.js";
 
 let unsubscribeNotes = null;
 let mediaRecorder = null;
@@ -154,28 +155,20 @@ function setupSelectionLogic(uid, isTrash) {
     const selectAllBtn = document.getElementById('selectAllBtn');
     const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
 
-    // Safety Check: যদি বাটন না থাকে, তাহলে ফাংশন থেকে বের হয়ে যাও
-    if (!toggleBtn || !selectAllBtn || !deleteSelectedBtn) {
-        console.warn('Selection buttons not found in HTML');
-        return;
-    }
+    if (!toggleBtn || !selectAllBtn || !deleteSelectedBtn) return;
 
-    // 1. Toggle Selection Mode
     toggleBtn.onclick = () => {
-        document.body.classList.toggle('selection-mode');
-        const isActive = document.body.classList.contains('selection-mode');
-        toggleBtn.classList.toggle('active');
-        toggleBtn.innerText = isActive ? "Cancel" : "Select";
+        const isActive = document.body.classList.toggle('selection-mode');
+        toggleBtn.textContent = isActive ? "Cancel" : "Select";
+        toggleBtn.style.background = isActive ? "#ef4444" : "";
         
         selectAllBtn.style.display = isActive ? 'inline-block' : 'none';
         deleteSelectedBtn.style.display = isActive ? 'inline-block' : 'none';
         
         if(!isActive) {
             selectedNoteIds.clear();
-            document.querySelectorAll('.card-select-checkbox').forEach(cb => {
-                cb.checked = false;
-                cb.closest('.note-card').classList.remove('selected');
-            });
+            document.querySelectorAll('.note-card').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('.card-select-checkbox').forEach(cb => cb.checked = false);
             updateSelectionUI();
         }
     };
@@ -205,22 +198,23 @@ function setupSelectionLogic(uid, isTrash) {
     deleteSelectedBtn.onclick = async () => {
         if(selectedNoteIds.size === 0) return;
         
-        const msg = isTrash 
-            ? `Permanently delete ${selectedNoteIds.size} items?` 
-            : `Move ${selectedNoteIds.size} items to Trash?`;
+        const confirmMsg = isTrash ? "স্থায়ীভাবে মুছে ফেলবেন?" : "ট্র্যাশে মুভ করবেন?";
+        if(!confirm(`${selectedNoteIds.size}টি নোট ${confirmMsg}`)) return;
 
-        if(confirm(msg)) {
+        try {
             const ids = Array.from(selectedNoteIds);
+            deleteSelectedBtn.disabled = true;
+            deleteSelectedBtn.innerText = "Deleting...";
+            
             await DBService.batchDeleteNotesDB(ids, isTrash);
             
-            // Reset UI
             selectedNoteIds.clear();
             updateSelectionUI();
-            document.body.classList.remove('selection-mode');
-            toggleBtn.classList.remove('active');
-            toggleBtn.innerText = "Select";
-            selectAllBtn.style.display = 'none';
-            deleteSelectedBtn.style.display = 'none';
+            toggleBtn.click();
+        } catch (err) {
+            alert("ডিলিট করতে সমস্যা হয়েছে!");
+        } finally {
+            deleteSelectedBtn.disabled = false;
         }
     };
 }
@@ -322,7 +316,7 @@ export function setupNoteSaving(user) {
                 aiMenu.style.display = 'none';
                 
                 const text = noteInput.value;
-                if(!text.trim()) return alert("Please write something first!");
+                if(!text.trim()) return showToast("⚠️ Please write something first!", "error");
 
                 const task = e.target.getAttribute('data-task');
                 aiStatus.style.display = 'inline';
@@ -340,7 +334,7 @@ export function setupNoteSaving(user) {
                         else noteInput.value = text + "\n\n**Summary:**\n" + result;
                     }
                 } catch (err) {
-                    alert("AI Error: " + err.message);
+                    showToast("❌ AI Error: " + err.message, "error");
                 } finally {
                     aiStatus.style.display = 'none';
                     aiBtn.disabled = false;
@@ -370,7 +364,7 @@ export function setupNoteSaving(user) {
                 isRecording = true;
                 micBtn.style.color = "red";
                 recStatus.style.display = "inline";
-            } catch (e) { alert("Microphone access denied!"); }
+            } catch (e) { alert("মাইক্রোফোন এক্সেস দিন!"); }
         } else {
             mediaRecorder.stop();
             isRecording = false;
@@ -415,7 +409,7 @@ export function setupNoteSaving(user) {
         const targetFolder = document.getElementById('folderSelect')?.value || "General";
         const selectedColor = document.querySelector('input[name="noteColor"]:checked')?.value || "#ffffff";
 
-        if (!rawText && !file && !androidSharedImage && !audioBlob) return alert("Empty note!");
+        if (!rawText && !file && !androidSharedImage && !audioBlob) return showToast("⚠️ Empty note!", "error");
 
         saveBtn.disabled = true; saveBtn.innerText = "Processing...";
         if(statusText) statusText.style.display = 'block';
@@ -472,7 +466,7 @@ export function setupNoteSaving(user) {
             noteInput.value = ""; clearFileInput();
             document.querySelector('.filter-btn[data-filter="all"]')?.click();
 
-        } catch (e) { console.error("Save Error:", e); alert("Error: " + e.message); } 
+        } catch (e) { console.error("Save Error:", e); showToast("❌ Error: " + e.message, "error"); } 
         finally { 
             saveBtn.disabled = false; saveBtn.innerText = "Save to Brain"; 
             if(statusText) statusText.style.display = 'none';

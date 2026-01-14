@@ -3,8 +3,8 @@
 import { db, auth } from '../core/firebase-config.js';
 import { collection, addDoc, onSnapshot, query, where, orderBy, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { showToast } from '../ui-shared.js';
 
-// DOM Elements
 const siteInput = document.getElementById('siteName');
 const userInput = document.getElementById('username');
 const passInput = document.getElementById('password');
@@ -19,17 +19,34 @@ const searchInput = document.getElementById('vaultSearchInput');
 
 let currentUser = null;
 let allSecrets = [];
-let masterKey = null; // এটি ডাটাবেসে সেভ হবে না
+let masterKey = null;
+let inactivityTimer;
 
-// ১. মাস্টার পাসওয়ার্ড প্রম্পট ফাংশন
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+        sessionStorage.removeItem('vault_master_key');
+        masterKey = null;
+        showToast("🔒 Vault locked due to inactivity.", "error");
+        setTimeout(() => window.location.reload(), 1500);
+    }, 5 * 60 * 1000);
+}
+
 function requestMasterPassword() {
-    const input = prompt("🔐 Enter your Vault Master Password/PIN to unlock:", "");
-    if (input && input.trim().length > 0) {
+    let storedKey = sessionStorage.getItem('vault_master_key');
+    if (storedKey) {
+        masterKey = storedKey;
+        return true;
+    }
+
+    const input = prompt("🔐 Enter your Vault Master Password:", "");
+    if (input && input.trim().length >= 4) {
         masterKey = input.trim();
+        sessionStorage.setItem('vault_master_key', masterKey);
         return true;
     } else {
-        alert("Master Password is required to access the Vault!");
-        window.location.href = "dashboard.html"; // পাসওয়ার্ড না দিলে বের করে দিন
+        showToast("⚠️ Master Password required!", "error");
+        setTimeout(() => window.location.href = "dashboard.html", 1500);
         return false;
     }
 }
@@ -38,12 +55,14 @@ onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         
-        // ইউজার লগইন করার পর মাস্টার পাসওয়ার্ড চাইবে
         if (requestMasterPassword()) {
             loadSecrets(user.uid);
+            resetInactivityTimer();
+            document.addEventListener('mousemove', resetInactivityTimer);
+            document.addEventListener('keypress', resetInactivityTimer);
+            document.addEventListener('click', resetInactivityTimer);
         }
 
-        // প্রোফাইল সেটআপ
         const navUserName = document.getElementById('nav-user-name');
         const navUserImg = document.getElementById('nav-user-img');
         const navProfileDiv = document.getElementById('nav-mini-profile');
@@ -57,7 +76,6 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// সার্চ লজিক
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
         const searchText = e.target.value.toLowerCase();
@@ -69,7 +87,6 @@ if (searchInput) {
     });
 }
 
-// সেভ বাটন
 if(saveBtn) {
     saveBtn.addEventListener('click', async () => {
         await saveSingleSecret(siteInput.value, userInput.value, passInput.value);
@@ -78,13 +95,12 @@ if(saveBtn) {
 }
 
 async function saveSingleSecret(site, username, password) {
-    if (!site || !password) { alert("Site name and Password are required!"); return; }
-    if (!masterKey) { alert("Vault is locked! Refresh page."); return; }
+    if (!site || !password) { showToast("⚠️ Site name and Password are required!", "error"); return; }
+    if (!masterKey) { showToast("🔒 Vault is locked! Refresh page.", "error"); return; }
 
     try {
         if(statusMsg) { statusMsg.style.display = "block"; statusMsg.style.color = "blue"; statusMsg.textContent = "Encrypting & Saving..."; }
         
-        // 🔥 SECURE ENCRYPTION: UID + MasterKey ব্যবহার করা হচ্ছে
         const encryptionKey = currentUser.uid + masterKey;
         const encryptedPassword = CryptoJS.AES.encrypt(password, encryptionKey).toString();
 
@@ -97,18 +113,19 @@ async function saveSingleSecret(site, username, password) {
         });
 
         if(statusMsg) { statusMsg.style.color = "green"; statusMsg.textContent = "Saved Securely!"; setTimeout(() => statusMsg.style.display = 'none', 1500); }
+        showToast("✅ Password saved securely!", "success");
     } catch (error) { 
         console.error("Error saving:", error); 
-        if(statusMsg) { statusMsg.style.color = "red"; statusMsg.textContent = "Error: " + error.message; } 
+        if(statusMsg) { statusMsg.style.color = "red"; statusMsg.textContent = "Error: " + error.message; }
+        showToast("❌ Error: " + error.message, "error");
     }
 }
 
-// CSV Import
 if(csvInput) {
     csvInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file || !confirm(`Import passwords from ${file.name}?`)) return;
-        if (!masterKey) { alert("Vault is locked!"); return; }
+        if (!masterKey) { showToast("🔒 Vault is locked!", "error"); return; }
 
         Papa.parse(file, {
             header: true, skipEmptyLines: true,
@@ -122,20 +139,19 @@ if(csvInput) {
                     const password = row.login_password || row.Password;
                     if (password) { await saveSingleSecret(site, username, password); count++; }
                 }
-                alert(`Success! Imported ${count} passwords.`);
+                showToast(`✅ Imported ${count} passwords successfully!`, "success");
                 if(statusMsg) statusMsg.style.display = 'none';
                 csvInput.value = ""; 
             },
-            error: function(err) { alert("CSV Error: " + err.message); }
+            error: function(err) { showToast("❌ CSV Error: " + err.message, "error"); }
         });
     });
 }
 
-// Export Logic
 if(exportBtn) {
     exportBtn.addEventListener('click', () => {
-        if (allSecrets.length === 0) { alert("Vault is empty!"); return; }
-        if (!masterKey) { alert("Vault is locked!"); return; }
+        if (allSecrets.length === 0) { showToast("⚠️ Vault is empty!", "error"); return; }
+        if (!masterKey) { showToast("🔒 Vault is locked!", "error"); return; }
         if(!confirm("Warning: Exporting will download DECRYPTED passwords. Continue?")) return;
 
         const csvData = allSecrets.map(secret => {
@@ -143,7 +159,7 @@ if(exportBtn) {
             try { 
                 const encryptionKey = currentUser.uid + masterKey;
                 realPass = CryptoJS.AES.decrypt(secret.password, encryptionKey).toString(CryptoJS.enc.Utf8); 
-                if(!realPass) realPass = "Wrong Master Key"; // যদি ভুল পাসওয়ার্ড দিয়ে পেজ লোড হয়
+                if(!realPass) realPass = "Wrong Master Key";
             } catch(e) { realPass = "Error"; }
             return { Title: secret.site, Username: secret.username, Password: realPass, URL: secret.site };
         });
@@ -152,10 +168,10 @@ if(exportBtn) {
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob); link.download = "mybrain_vault_backup.csv"; link.click();
+        showToast("✅ Vault exported successfully!", "success");
     });
 }
 
-// Load Secrets
 function loadSecrets(userId) {
     const q = query(collection(db, "vault"), where("userId", "==", userId), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
@@ -191,8 +207,10 @@ function loadSecrets(userId) {
     });
 }
 
-// Global Functions
-window.copyUsername = (text) => navigator.clipboard.writeText(text);
+window.copyUsername = (text) => { 
+    navigator.clipboard.writeText(text); 
+    showToast("✅ Username copied!", "success"); 
+};
 
 window.revealPass = (id, encryptedPass) => {
     const passField = document.getElementById(`pass-text-${id}`);
@@ -206,9 +224,9 @@ window.revealPass = (id, encryptedPass) => {
         if(decrypted) {
             passField.textContent = decrypted;
         } else {
-            alert("Wrong Master Password! Please refresh and try again.");
+            showToast("❌ Wrong Master Password!", "error");
         }
-    } catch (e) { alert("Decrypt Error"); }
+    } catch (e) { showToast("❌ Decrypt Error", "error"); }
 };
 
 window.copyPass = (id, encryptedPass) => {
@@ -218,14 +236,19 @@ window.copyPass = (id, encryptedPass) => {
         const decrypted = CryptoJS.AES.decrypt(encryptedPass, encryptionKey).toString(CryptoJS.enc.Utf8);
         if(decrypted) {
             navigator.clipboard.writeText(decrypted); 
-            alert("Password Copied!"); 
+            showToast("✅ Password copied!", "success"); 
         } else {
-            alert("Wrong Master Password!");
+            showToast("❌ Wrong Master Password!", "error");
         }
-    } catch (e) { alert("Copy Failed"); }
+    } catch (e) { showToast("❌ Copy Failed", "error"); }
 };
 
-window.deleteSecret = async (id) => { if(confirm("Are you sure?")) await deleteDoc(doc(db, "vault", id)); };
+window.deleteSecret = async (id) => { 
+    if(confirm("Are you sure?")) {
+        await deleteDoc(doc(db, "vault", id));
+        showToast("✅ Password deleted!", "success");
+    }
+};
 
 if(togglePassBtn) togglePassBtn.addEventListener('click', () => passInput.type = passInput.type === "password" ? "text" : "password");
 if(logoutBtn) logoutBtn.addEventListener('click', (e) => { e.preventDefault(); signOut(auth).then(() => window.location.href = "index.html"); });

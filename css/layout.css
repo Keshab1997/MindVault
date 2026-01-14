@@ -1,21 +1,127 @@
-<nav class="navbar">
-    <!-- এই নতুন div টি এলাইনমেন্ট ঠিক করবে -->
-    <div class="nav-content-wrapper">
-        <div class="logo-section">
-            <span class="logo-icon">🧠</span>
-            <span class="logo-text">MyBrain</span>
-        </div>
-        
-        <div class="nav-right">
-            <button id="theme-toggle" class="btn-icon" title="Toggle Dark Mode">🌙</button>
-            <div class="nav-links">
-                <a href="#" class="nav-item active">Notes</a>
-                <a href="vault.html" class="nav-item">Vault</a>
-            </div>
-            <button id="logout-btn" class="btn-logout">
-                <img src="https://img.icons8.com/ios-glyphs/30/fa314a/exit.png" alt="Logout" style="width:16px; margin-right:5px;">
-                Logout
-            </button>
-        </div>
-    </div>
-</nav>
+/* layout.css - Navbar এবং Layout */
+
+.navbar {
+    height: 65px;
+    background: var(--bg-card, #ffffff);
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.nav-content-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    padding: 0 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-profile-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 50px;
+    background: var(--bg-body, #f3f4f6);
+    transition: 0.2s;
+}
+
+.nav-profile-group:hover {
+    background: #e5e7eb;
+}
+
+.hamburger-icon {
+    font-size: 20px;
+    color: #374151;
+}
+
+.nav-links {
+    display: none;
+    position: absolute;
+    top: 70px;
+    right: 15px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 15px;
+    padding: 10px;
+    min-width: 200px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    flex-direction: column;
+    gap: 5px;
+}
+
+.nav-links.active { 
+    display: flex;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.nav-links hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 5px 0;
+}
+
+.nav-item {
+    padding: 12px 15px;
+    text-decoration: none;
+    color: #374151;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: 0.2s;
+    display: block;
+}
+
+.nav-item:hover,
+.nav-item.active { 
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.btn-install-sm {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-logout-nav {
+    background: #fff1f2;
+    color: #e11d48;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: 0.2s;
+}
+
+.btn-logout-nav:hover {
+    background: #ffe4e6;
+}
+
+@media (max-width: 600px) {
+    .logo-text { font-size: 18px; }
+    .nav-avatar { width: 30px; height: 30px; }
+    .nav-content-wrapper { padding: 0 15px; }
+}

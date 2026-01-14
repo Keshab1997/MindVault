@@ -85,12 +85,15 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         
         // যদি টাইটেল থাকে (যেমন YouTube এর ক্ষেত্রে)
         const videoTitle = data.title || data.metaTitle;
-        if(videoTitle) {
+        const isFacebook = data.text && (data.text.includes('facebook.com') || data.text.includes('fb.watch'));
+        
+        if(videoTitle && !isFacebook) {
             contentHTML += `<div style="margin-top:10px; margin-bottom:5px; font-weight:600; font-size:15px; color:#1f2937; line-height:1.4;">${videoTitle}</div>`;
         }
         
         // অরিজিনাল লিংক বাটন
-        contentHTML += `<div style="text-align:right; margin-bottom:5px;"><a href="${data.text}" target="_blank" style="font-size:11px; color:#888; text-decoration:none;">🔗 Open Original Link</a></div>`;
+        const linkText = isFacebook ? '🔵 View on Facebook' : '🔗 Open Original Link';
+        contentHTML += `<div style="text-align:right; margin-bottom:5px;"><a href="${data.text}" target="_blank" style="font-size:11px; color:#2563eb; text-decoration:none; font-weight:bold;">${linkText}</a></div>`;
     }
 
     // D. Generic Link Preview (যাদের এম্বেড নেই, যেমন ব্লগ বা নিউজ)
