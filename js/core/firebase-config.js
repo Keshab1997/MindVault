@@ -3,7 +3,8 @@ import {
     getAuth, 
     GoogleAuthProvider, 
     signInWithPopup, 
-    signInWithRedirect, 
+    signInWithRedirect,
+    getRedirectResult,
     onAuthStateChanged, 
     signOut 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -46,6 +47,6 @@ const provider = new GoogleAuthProvider();
 
 export { 
     app, auth, db, provider, 
-    signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut,
+    signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut,
     collection, addDoc, getDocs, doc, deleteDoc, query, where
 };

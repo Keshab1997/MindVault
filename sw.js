@@ -18,22 +18,29 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('firestore.googleapis.com') || event.request.url.includes('cloudinary')) return;
+  // ফায়ারবেস এবং বাইরের API ক্যাশ করা যাবে না
+  if (event.request.url.includes('googleapis.com') || 
+      event.request.url.includes('firebasejs') || 
+      event.request.url.includes('cloudinary')) {
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      const networkFetch = fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
+      return cachedResponse || fetch(event.request).then((networkResponse) => {
+        // শুধুমাত্র সাকসেসফুল রিকোয়েস্ট ক্যাশ করো
+        if (networkResponse && networkResponse.status === 200) {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
         }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
         return networkResponse;
+      }).catch(() => {
+        // ফেচ ফেইল করলে এরর না দেখিয়ে শান্ত থাকো
+        console.log('Offline or fetch failed for:', event.request.url);
+        return caches.match('./index.html');
       });
-
-      return cachedResponse || networkFetch;
-    }).catch(() => caches.match('./index.html'))
+    })
   );
 });

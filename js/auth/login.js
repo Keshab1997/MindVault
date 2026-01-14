@@ -1,40 +1,41 @@
 // js/auth/login.js
-import { auth, provider, signInWithPopup, signInWithRedirect, onAuthStateChanged } from "../core/firebase-config.js";
+import { auth, provider, signInWithPopup, onAuthStateChanged } from "../core/firebase-config.js";
+
+console.log("🚀 Login Script Running");
+
+// ১. ইউজার স্টেট চেক
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        console.log("✅ User Found:", user.email);
+        window.location.replace("dashboard.html");
+    } else {
+        console.log("ℹ️ No user session found.");
+    }
+});
 
 const loginBtn = document.getElementById('google-login-btn');
 
-// ১. লগইন বাটনের কাজ
 if (loginBtn) {
-    loginBtn.addEventListener('click', () => {
-        // মোবাইল ডিভাইস কিনা চেক করা (Android, iPhone, etc.)
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        if (isMobile) {
-            // === মোবাইল (ব্রাউজার অথবা APK) এর জন্য Redirect ===
-            // মোবাইলে পপআপ ঝামেলা করে, তাই রিডাইরেক্ট সবচেয়ে নিরাপদ
-            console.log("Device: Mobile (Using Redirect)");
-            signInWithRedirect(auth, provider);
-        } else {
-            // === কম্পিউটার/ডেস্কটপ এর জন্য Popup ===
-            console.log("Device: Desktop (Using Popup)");
-            signInWithPopup(auth, provider)
-                .then((result) => {
-                    console.log("Login Success:", result.user);
-                    window.location.replace("dashboard.html");
-                })
-                .catch((error) => {
-                    console.error("Popup Login Error:", error);
-                    alert("Login Failed: " + error.message);
-                });
+    loginBtn.onclick = async () => {
+        console.log("🖱️ Button Clicked");
+        try {
+            // পপআপ দিয়ে লগইন
+            const result = await signInWithPopup(auth, provider);
+            console.log("✅ Login Success:", result.user.email);
+            window.location.replace("dashboard.html");
+        } catch (error) {
+            console.error("❌ Login Error:", error.code, error.message);
+            
+            // যদি পপআপ ব্লক হয়, তবে রিডাইরেক্ট ব্যবহার করা
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                console.log("🔄 Popup blocked, switching to redirect...");
+                const { signInWithRedirect } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                signInWithRedirect(auth, provider);
+            } else {
+                alert("Login Error: " + error.message);
+            }
         }
-    });
+    };
+} else {
+    console.error("❌ Error: 'google-login-btn' not found in HTML!");
 }
-
-// ২. ইউজার লগইন চেক (মোবাইলে রিডাইরেক্ট হয়ে ফিরে আসার পর এটা কাজ করবে)
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        console.log("User detected:", user.email);
-        // লগইন সফল হলে ড্যাশবোর্ডে পাঠিয়ে দিন
-        window.location.replace("dashboard.html");
-    }
-});

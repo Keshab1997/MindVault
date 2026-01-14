@@ -2,6 +2,8 @@
 import { auth } from "../core/firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+console.log("🚀 Dashboard Main.js Loaded");
+
 // মডিউল ইমপোর্ট
 import { loadNotes, setupNoteSaving } from "./note-manager.js";
 import { setupFolders } from "./folder-manager.js";
@@ -10,18 +12,20 @@ import { setupModals } from "./menu-manager.js";
 
 // অথেনটিকেশন চেকার
 onAuthStateChanged(auth, (user) => {
+    console.log("🔄 Auth State Changed (Dashboard):", user ? "User: " + user.email : "No User Found");
+    
     if (!user) {
-        // ইউজার না থাকলে লগইন পেজে পাঠান
-        window.location.href = "index.html";
+        console.warn("⚠️ No user detected on Dashboard! Redirecting to index.html...");
+        window.location.replace("index.html");
     } else {
-        // ইউজার থাকলে ড্যাশবোর্ড লোড করুন
-        console.log("User Authenticated:", user.email);
+        console.log("✅ Access Granted for:", user.email);
         initDashboard(user);
     }
 });
 
 // ড্যাশবোর্ড ইনিশিয়ালাইজেশন ফাংশন
 function initDashboard(user) {
+    console.log("🛠️ Initializing Dashboard for:", user.email);
     // ১. প্রোফাইল সেটআপ (নাম ও ছবি দেখানো)
     const profileDiv = document.getElementById('nav-mini-profile');
     const nameEl = document.getElementById('nav-user-name');
