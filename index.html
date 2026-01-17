@@ -29,9 +29,27 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW Registered!', reg))
-                    .catch(err => console.log('SW Failed:', err));
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('SW Registered!', reg);
+                    // নতুন আপডেট চেক করা
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                window.location.reload();
+                            }
+                        };
+                    };
+                }).catch(err => console.log('SW Failed:', err));
+            });
+
+            // কন্ট্রোলার চেঞ্জ হলে রিলোড
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    window.location.reload();
+                    refreshing = true;
+                }
             });
         }
     </script>

@@ -1,20 +1,38 @@
-// sw.js
-const CACHE_NAME = 'mindvault-v5';
-const ASSETS = ['./', './index.html', './dashboard.html', './vault.html', './css/global.css', './js/ui-shared.js'];
+// sw.js - Version Update: v6
+const CACHE_NAME = 'mindvault-v6'; 
+const ASSETS = [
+  './', 
+  './index.html', 
+  './dashboard.html', 
+  './vault.html', 
+  './css/global.css', 
+  './css/layout.css',
+  './css/style-dash.css',
+  './css/dark-mode.css',
+  './js/ui-shared.js'
+];
 
+// ইনস্টল হওয়ার সময় নতুন ফাইল ক্যাশ করা
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(c => c.addAll(ASSETS))
+  );
+  self.skipWaiting(); // নতুন ভার্সন আসার সাথে সাথে ওয়েটিং পিরিয়ড স্কিপ করবে
 });
 
+// অ্যাক্টিভেট হওয়ার সময় পুরনো ক্যাশ ডিলিট করা
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(keys.map((key) => {
-        if (key !== CACHE_NAME) return caches.delete(key);
+        // বর্তমান ভার্সন ছাড়া বাকি সব পুরনো ক্যাশ মুছে ফেলবে
+        if (key !== CACHE_NAME && key !== 'mindvault-images' && key !== 'shared-data') {
+          return caches.delete(key);
+        }
       }));
     })
   );
+  self.clients.claim(); // সাথে সাথে সব ট্যাব কন্ট্রোল নিয়ে নেবে
 });
 
 self.addEventListener('fetch', (event) => {
@@ -53,17 +71,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // নেটওয়ার্ক ফার্সট স্ট্র্যাটেজি (যাতে আপডেট দ্রুত পাওয়া যায়)
   event.respondWith(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.match(event.request).then((response) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        });
-        return response || fetchPromise;
-      });
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
