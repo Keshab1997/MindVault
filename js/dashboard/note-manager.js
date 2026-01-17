@@ -6,7 +6,20 @@ import * as Utils from "../core/utils.js";
 import { openContextMenu, openReadModal } from "./menu-manager.js";
 import { askAI } from "./ai-service.js";
 import { showToast } from "../ui-shared.js";
-import { localDB } from "../core/db-local.js"; // ইমপোর্ট করুন
+import { localDB } from "../core/db-local.js";
+
+// নোটিফিকেশন হেল্পার ফাংশন
+async function sendNotification(title, body) {
+    if (Notification.permission === "granted") {
+        const registration = await navigator.serviceWorker.ready;
+        registration.showNotification(title, {
+            body: body,
+            icon: 'https://cdn-icons-png.flaticon.com/512/2965/2965358.png',
+            badge: 'https://cdn-icons-png.flaticon.com/512/2965/2965358.png',
+            vibrate: [100, 50, 100]
+        });
+    }
+} // ইমপোর্ট করুন
 
 let unsubscribeNotes = null;
 let unsubscribePinned = null; // নতুন ভেরিয়েবল যোগ করুন
@@ -304,6 +317,11 @@ export async function setupNoteSaving(user) {
     }
 
     handleSharedContent(); // ফাংশনটি কল করুন
+
+    // নোটিফিকেশন পারমিশন রিকোয়েস্ট
+    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
 
     // 🔥 Background Share Processing
     await processPendingShares(user);
@@ -631,6 +649,9 @@ async function processPendingShares(user) {
 }
 
 async function uploadInBackground(user, text, files) {
+    // ১. আপলোড শুরু হওয়ার নোটিফিকেশন
+    sendNotification("MindVault", "🚀 Background upload started...");
+
     try {
         if (files.length === 0) {
             // শুধু টেক্সট সেভ
@@ -663,10 +684,15 @@ async function uploadInBackground(user, text, files) {
                 });
             }
         }
+        
+        // ২. আপলোড সফল হওয়ার নোটিফিকেশন
+        sendNotification("MindVault ✅", "Your notes have been saved successfully!");
         showToast("✅ Background upload complete!", "success");
         // নোট রিফ্রেশ
         document.querySelector('.filter-btn[data-filter="all"]')?.click();
     } catch (err) {
+        // ৩. এরর নোটিফিকেশন
+        sendNotification("MindVault ❌", "Upload failed! Please check your connection.");
         showToast("❌ Background upload failed!", "error");
         console.error("Background upload error:", err);
     }
