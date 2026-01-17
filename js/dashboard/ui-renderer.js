@@ -187,16 +187,38 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
     rightActions.style.gap = "12px";
     rightActions.style.alignItems = "center";
 
-    // 🔥 WhatsApp Direct Share Button
+    // 🔥 WhatsApp Direct Share Button (Fixed for Photos)
     if (!isTrashView) {
         const waBtn = document.createElement('button');
         waBtn.innerHTML = ' <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="18" height="18" style="opacity:0.7;">';
         waBtn.style.cssText = "background:none; border:none; cursor:pointer; display:flex; align-items:center;";
         waBtn.title = "Share to WhatsApp";
-        waBtn.onclick = (e) => {
+        
+        waBtn.onclick = async (e) => {
             e.stopPropagation();
-            const shareText = data.text || "Check this out!";
-            const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+            
+            // ১. টেক্সট থেকে হ্যাশট্যাগ রিমুভ করে ক্লিন করা
+            const cleanText = data.text ? data.text.replace(/#\w+/g, '').trim() : "";
+            const fileUrl = data.fileUrl || ""; // ফটোর লিংক
+            
+            // ২. যদি ব্রাউজার Web Share API সাপোর্ট করে (মোবাইলের জন্য বেস্ট)
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'MindVault Note',
+                        text: cleanText,
+                        url: fileUrl // এখানে লিংক দিলে হোয়াটসঅ্যাপ ফটো প্রিভিউ দেখাবে
+                    });
+                    return; // সাকসেস হলে এখানেই শেষ
+                } catch (err) {
+                    console.log("Web Share failed, falling back to URL...");
+                }
+            }
+
+            // ৩. ফলব্যাক: যদি Web Share কাজ না করে (ডেস্কটপ বা পুরনো ব্রাউজার)
+            // টেক্সট এবং ফটোর লিংক একসাথে পাঠানো হচ্ছে যাতে প্রিভিউ আসে
+            const finalMessage = `${cleanText}\n\n${fileUrl}`.trim();
+            const waUrl = `https://wa.me/?text=${encodeURIComponent(finalMessage)}`;
             window.open(waUrl, '_blank');
         };
         rightActions.appendChild(waBtn);
