@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = 'mybrain-v4';
+const CACHE_NAME = 'mindvault-v5';
 const ASSETS = ['./', './index.html', './dashboard.html', './vault.html', './css/global.css', './js/ui-shared.js'];
 
 self.addEventListener('install', (e) => {
@@ -18,28 +18,51 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // ফায়ারবেস এবং বাইরের API ক্যাশ করা যাবে না
+  const url = new URL(event.request.url);
+
+  // ক্লাউডিনারি ইমেজ ক্যাশ করার লজিক
+  if (url.hostname.includes('cloudinary.com')) {
+    event.respondWith(
+      caches.open('mindvault-images').then((cache) => {
+        return cache.match(event.request).then((response) => {
+          return response || fetch(event.request).then((networkResponse) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        });
+      })
+    );
+    return;
+  }
+
+  // শেয়ার টারগেট হ্যান্ডেল করা
+  if (event.request.method === 'POST' && event.request.url.includes('dashboard.html')) {
+    event.respondWith(Response.redirect('./dashboard.html?shared=true', 303));
+    
+    event.waitUntil(async function() {
+      const formData = await event.request.formData();
+      const file = formData.get('shared_image');
+      const cache = await caches.open('shared-data');
+      await cache.put('shared-image', new Response(file));
+    }());
+    return;
+  }
+  
   if (event.request.url.includes('googleapis.com') || 
-      event.request.url.includes('firebasejs') || 
-      event.request.url.includes('cloudinary')) {
+      event.request.url.includes('firebasejs')) {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request).then((networkResponse) => {
-        // শুধুমাত্র সাকসেসফুল রিকোয়েস্ট ক্যাশ করো
-        if (networkResponse && networkResponse.status === 200) {
-          return caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.match(event.request).then((response) => {
+        const fetchPromise = fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
             cache.put(event.request, networkResponse.clone());
-            return networkResponse;
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        // ফেচ ফেইল করলে এরর না দেখিয়ে শান্ত থাকো
-        console.log('Offline or fetch failed for:', event.request.url);
-        return caches.match('./index.html');
+          }
+          return networkResponse;
+        });
+        return response || fetchPromise;
       });
     })
   );

@@ -1,6 +1,6 @@
 {
-  "name": "MyBrain Notes",
-  "short_name": "MyBrain",
+  "name": "MindVault Notes",
+  "short_name": "MindVault",
   "start_url": "./index.html",
   "id": "/",
   "display": "standalone",
@@ -23,12 +23,18 @@
   ],
   "share_target": {
     "action": "./dashboard.html",
-    "method": "GET",
-    "enctype": "application/x-www-form-urlencoded",
+    "method": "POST",
+    "enctype": "multipart/form-data",
     "params": {
       "title": "title",
       "text": "text",
-      "url": "url"
+      "url": "url",
+      "files": [
+        {
+          "name": "shared_image",
+          "accept": ["image/*"]
+        }
+      ]
     }
   }
 }

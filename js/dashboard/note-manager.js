@@ -6,8 +6,10 @@ import * as Utils from "../core/utils.js";
 import { openContextMenu, openReadModal } from "./menu-manager.js";
 import { askAI } from "./ai-service.js";
 import { showToast } from "../ui-shared.js";
+import { localDB } from "../core/db-local.js"; // ইমপোর্ট করুন
 
 let unsubscribeNotes = null;
+let unsubscribePinned = null; // নতুন ভেরিয়েবল যোগ করুন
 let mediaRecorder = null;
 let audioChunks = [];
 let selectedNoteIds = new Set(); // 🔥 সিলেকশন স্টোর করার জন্য
@@ -15,13 +17,18 @@ let selectedNoteIds = new Set(); // 🔥 সিলেকশন স্টোর �
 // ==================================================
 // ১. নোট লোড করার লজিক
 // ==================================================
-export function loadNotes(uid, filterType = 'All', filterValue = null) {
+export async function loadNotes(uid, filterType = 'All', filterValue = null) {
     const contentGrid = document.getElementById('content-grid');
     
-    // Safety Check: গ্রিড না পেলে কাজ বন্ধ
     if (!contentGrid) {
         console.error("Error: 'content-grid' ID not found in HTML");
         return;
+    }
+
+    // ১. প্রথমে লোকাল ডেটাবেস থেকে ডেটা লোড করুন (ইন্সট্যান্ট লোডিং)
+    const cachedNotes = await localDB.getAllNotes();
+    if (cachedNotes.length > 0 && filterType === 'All') {
+        renderNotesToUI(cachedNotes, contentGrid, filterType, uid);
     }
     const notesRef = collection(db, "notes");
     let q;
@@ -52,72 +59,90 @@ export function loadNotes(uid, filterType = 'All', filterValue = null) {
     }
 
     if (unsubscribeNotes) unsubscribeNotes();
+    if (unsubscribePinned) unsubscribePinned(); // আগের পিন লিসেনার বন্ধ করুন
 
-    unsubscribeNotes = onSnapshot(q, (snapshot) => {
-        contentGrid.innerHTML = "";
-        selectedNoteIds.clear(); // নতুন লোড হলে সিলেকশন ক্লিয়ার
-        updateSelectionUI();
+    unsubscribeNotes = onSnapshot(q, async (snapshot) => {
+        const notes = [];
+        snapshot.forEach(doc => notes.push({ id: doc.id, ...doc.data() }));
 
-        // ট্র্যাশ হেডার
-        if (filterType === 'trash') {
-            const count = snapshot.size;
-            const trashHeader = document.createElement('div');
-            trashHeader.style.cssText = "width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:10px; background:#fff0f0; border-radius:8px; border:1px solid #ffcdd2; grid-column: 1 / -1;";
-            
-            trashHeader.innerHTML = `
-                <span style="color:#d32f2f; font-weight:bold;">🗑️ Trash (${count} items)</span>
-                ${count > 0 ? `<button id="emptyTrashBtn" style="background:#d32f2f; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px;">Empty Trash</button>` : ''}
-            `;
-            
-            const warning = document.createElement('p');
-            warning.style.cssText = "width:100%; text-align:center; font-size:11px; color:#888; margin-bottom:15px; grid-column: 1 / -1;";
-            warning.innerText = "Items in trash are automatically deleted after 7 days.";
-            
-            contentGrid.appendChild(trashHeader);
-            contentGrid.appendChild(warning);
+        // ৩. লোকাল ডেটাবেসে সেভ করুন
+        if (filterType === 'All') await localDB.saveNotes(notes);
 
-            setTimeout(() => {
-                const emptyBtn = document.getElementById('emptyTrashBtn');
-                if(emptyBtn) {
-                    emptyBtn.onclick = async () => {
-                        if(confirm("Delete ALL items permanently?")) await DBService.emptyTrashDB(uid);
-                    };
-                }
-            }, 0);
-        }
-
-        if(snapshot.empty) {
-            let msg = filterType === 'trash' ? "Trash is empty 😌" : "No notes found.";
-            const p = document.createElement('p');
-            p.style.cssText = "text-align:center; color:#999; margin-top:20px; width:100%; grid-column: 1 / -1;";
-            p.innerText = msg;
-            contentGrid.appendChild(p);
-            return;
-        }
-
-        snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            if (filterType !== 'trash' && data.isPinned) return;
-
-            const card = UI.createNoteCardElement(docSnap, filterType === 'trash', {
-                onRestore: DBService.restoreNoteDB,
-                onDeleteForever: (id) => confirm("Permanently delete?") && DBService.deleteNoteForeverDB(id),
-                onContextMenu: openContextMenu,
-                onRead: openReadModal,
-                onSelect: (id, isSelected) => { // 🔥 সিলেকশন হ্যান্ডলার
-                    if(isSelected) selectedNoteIds.add(id);
-                    else selectedNoteIds.delete(id);
-                    updateSelectionUI();
-                }
-            });
-            contentGrid.appendChild(card);
-        });
+        // ৪. UI আপডেট করুন
+        renderNotesToUI(notes, contentGrid, filterType, uid);
         
         const searchInput = document.getElementById('searchInput');
         if(searchInput && searchInput.value) searchInput.dispatchEvent(new Event('input'));
     });
 
     setupSelectionLogic(uid, filterType === 'trash');
+}
+
+// রেন্ডারিং লজিক আলাদা ফাংশনে নিয়ে আসা (কোড ক্লিন রাখার জন্য)
+function renderNotesToUI(notes, container, filterType, uid) {
+    container.innerHTML = "";
+    selectedNoteIds.clear();
+    updateSelectionUI();
+
+    // ট্র্যাশ হেডার
+    if (filterType === 'trash') {
+        const count = notes.length;
+        const trashHeader = document.createElement('div');
+        trashHeader.style.cssText = "width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:10px; background:#fff0f0; border-radius:8px; border:1px solid #ffcdd2; grid-column: 1 / -1;";
+        
+        trashHeader.innerHTML = `
+            <span style="color:#d32f2f; font-weight:bold;">🗑️ Trash (${count} items)</span>
+            ${count > 0 ? `<button id="emptyTrashBtn" style="background:#d32f2f; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px;">Empty Trash</button>` : ''}
+        `;
+        
+        const warning = document.createElement('p');
+        warning.style.cssText = "width:100%; text-align:center; font-size:11px; color:#888; margin-bottom:15px; grid-column: 1 / -1;";
+        warning.innerText = "Items in trash are automatically deleted after 7 days.";
+        
+        container.appendChild(trashHeader);
+        container.appendChild(warning);
+
+        setTimeout(() => {
+            const emptyBtn = document.getElementById('emptyTrashBtn');
+            if(emptyBtn) {
+                emptyBtn.onclick = async () => {
+                    if(confirm("Delete ALL items permanently?")) await DBService.emptyTrashDB(uid);
+                };
+            }
+        }, 0);
+    }
+
+    if(notes.length === 0) {
+        let msg = filterType === 'trash' ? "Trash is empty 😌" : "No notes found.";
+        const p = document.createElement('p');
+        p.style.cssText = "text-align:center; color:#999; margin-top:20px; width:100%; grid-column: 1 / -1;";
+        p.innerText = msg;
+        container.appendChild(p);
+        return;
+    }
+
+    notes.forEach((noteData) => {
+        if (filterType !== 'trash' && noteData.isPinned) return;
+
+        // Mock docSnap object for UI compatibility
+        const mockDocSnap = {
+            id: noteData.id,
+            data: () => noteData
+        };
+
+        const card = UI.createNoteCardElement(mockDocSnap, filterType === 'trash', {
+            onRestore: DBService.restoreNoteDB,
+            onDeleteForever: (id) => confirm("Permanently delete?") && DBService.deleteNoteForeverDB(id),
+            onContextMenu: openContextMenu,
+            onRead: openReadModal,
+            onSelect: (id, isSelected) => {
+                if(isSelected) selectedNoteIds.add(id);
+                else selectedNoteIds.delete(id);
+                updateSelectionUI();
+            }
+        });
+        container.appendChild(card);
+    });
 }
 
 function loadPinnedNotes(uid) {
@@ -127,7 +152,8 @@ function loadPinnedNotes(uid) {
 
     if(!pinSection || !pinGrid) return;
 
-    onSnapshot(q, (snapshot) => {
+    // লিসেনারটি ভেরিয়েবলে সেভ করুন যাতে পরে আনসাবস্ক্রাইব করা যায়
+    unsubscribePinned = onSnapshot(q, (snapshot) => {
         if (snapshot.empty) {
             pinSection.style.display = 'none';
         } else {
@@ -241,6 +267,42 @@ export function setupNoteSaving(user) {
     const audioPreviewContainer = document.getElementById('audio-preview-container');
     const audioPreview = document.getElementById('audio-preview');
     const removeAudioBtn = document.getElementById('remove-audio-btn');
+
+    // 🔥 শেয়ার করা ছবি হ্যান্ডেল করা
+    window.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('shared')) {
+            try {
+                const cache = await caches.open('shared-data');
+                const response = await cache.match('shared-image');
+                if (response) {
+                    const blob = await response.blob();
+                    const file = new File([blob], "shared_image.jpg", { type: blob.type });
+                    
+                    // ফাইল ইনপুটে সেট করা
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+
+                    // প্রিভিউ দেখানো
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imagePreview.src = e.target.result;
+                        previewContainer.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    saveBtn.innerText = "Save Shared Image";
+                    // ক্যাশ ক্লিয়ার করা
+                    await cache.delete('shared-image');
+                    // URL ক্লিন করা
+                    window.history.replaceState({}, document.title, "dashboard.html");
+                }
+            } catch (e) {
+                console.error("Error receiving shared image:", e);
+            }
+        }
+    });
 
     // 🔥 AI বাটন এবং টুলবার (আপডেটেড)
     const toolbarHTML = `
@@ -457,18 +519,12 @@ export function setupNoteSaving(user) {
             } 
             else if (Utils.isValidURL(text)) {
                 type = 'link';
-                if (!text.includes('instagram.com') && !text.includes('facebook.com')) {
-                    saveBtn.innerText = "🤖 AI Fetching...";
-                    try {
-                        linkMeta = await Utils.getLinkPreviewData(text);
-                    } catch (e) {
-                        console.log("Preview failed, saving as simple link");
-                    }
-                } else {
-                    console.log("Skipping preview fetch for social media embed");
-                    if (text.includes('instagram')) {
-                        linkMeta = { title: "Instagram Post" };
-                    }
+                // ইন্সটাগ্রাম এবং ফেসবুকের জন্য ফেচিং এলাউ করা হলো
+                saveBtn.innerText = "🤖 AI Fetching...";
+                try {
+                    linkMeta = await Utils.getLinkPreviewData(text);
+                } catch (e) {
+                    console.log("Preview failed, saving as simple link");
                 }
             }
 

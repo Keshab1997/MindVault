@@ -54,12 +54,16 @@ height: 60px;
 .logo-section {
 display: flex;
 align-items: center;
-gap: 8px;
+gap: 10px; /* লোগো এবং টেক্সটের মাঝে গ্যাপ */
 font-size: 1.4rem;
 font-weight: 800;
 color: #2563eb;
 letter-spacing: -0.5px;
 cursor: pointer;
+}
+
+.logo-section img {
+object-fit: contain;
 }
 
 .logo-icon {

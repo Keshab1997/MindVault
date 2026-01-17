@@ -107,3 +107,11 @@ export async function deleteFolderDB(uid, folderId, folderName) {
     batch.delete(doc(db, "folders", folderId));
     await batch.commit();
 }
+
+export async function updateNoteFolderDB(id, newFolder) {
+    await updateDoc(doc(db, "notes", id), { folder: newFolder });
+}
+
+export async function updateNoteTagsDB(id, newTags) {
+    await updateDoc(doc(db, "notes", id), { tags: newTags });
+}

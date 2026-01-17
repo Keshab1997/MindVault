@@ -1,5 +1,5 @@
 import { getUniversalEmbedHTML } from "../core/utils.js";
-import { updateNoteContentDB } from "../core/firebase-service.js";
+import { updateNoteContentDB, updateNoteFolderDB, updateNoteTagsDB } from "../core/firebase-service.js";
 
 // কপি ফাংশন (গ্লোবাল)
 window.copyCodeBlock = (btn) => {
@@ -55,90 +55,167 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         card.appendChild(folderBadge);
     }
 
+    // ১. Inline Folder Selector (Premium Look)
+    if(!isTrashView) {
+        const folderContainer = document.createElement('div');
+        folderContainer.style.margin = "0 0 10px 0";
+        
+        // ফোল্ডার লিস্ট পাওয়ার জন্য একটি Set ব্যবহার করছি যাতে ডুপ্লিকেট না হয়
+        const folderSet = new Set(["General"]); 
+        
+        // ১. ইনপুট এরিয়ার ড্রপডাউন থেকে ফোল্ডারগুলো নিন
+        document.querySelectorAll('#folderSelect option').forEach(opt => {
+            if(opt.value) folderSet.add(opt.value);
+        });
+
+        // ২. উপরের ফোল্ডার চিপস (Folder Chips) থেকেও নামগুলো নিন
+        document.querySelectorAll('.folder-chip').forEach(chip => {
+            const name = chip.innerText.replace('📁', '').replace('×', '').trim();
+            if(name) folderSet.add(name);
+        });
+
+        const allFolders = Array.from(folderSet);
+        
+        let folderOptions = allFolders.map(f => `<option value="${f}" ${data.folder === f ? 'selected' : ''}>${f}</option>`).join('');
+
+        folderContainer.innerHTML = `
+            <select class="inline-folder-select" style="background: rgba(37, 99, 235, 0.1); border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; color: #2563eb; font-weight: 600; cursor: pointer; outline: none; max-width: 120px;">
+                ${folderOptions}
+            </select>
+        `;
+
+        const select = folderContainer.querySelector('select');
+        select.addEventListener('change', async (e) => {
+            const newFolder = e.target.value;
+            try {
+                await updateNoteFolderDB(id, newFolder);
+            } catch (err) {
+                console.error("Folder update failed:", err);
+            }
+        });
+        card.appendChild(folderContainer);
+    }
+
     // কন্টেন্ট জেনারেশন
     let contentHTML = '';
-
-    // প্রথমে চেক করা হচ্ছে এটি কোনো সোশ্যাল মিডিয়া এম্বেড কিনা
     const mediaEmbed = getUniversalEmbedHTML(data.text);
 
-    // A. Audio
     if (data.type === 'audio' && data.fileUrl) {
-        contentHTML += `
-            <div style="margin-bottom:10px;">
-                <audio controls style="width:100%; height:35px;">
-                    <source src="${data.fileUrl}" type="audio/mpeg">
-                </audio>
-            </div>`;
+        contentHTML += `<div style="margin-bottom:10px;"><audio controls style="width:100%; height:35px;"><source src="${data.fileUrl}" type="audio/mpeg"></audio></div>`;
         if(data.text) contentHTML += generateTextHTML(data.text, id);
-    }
-    // B. Image
-    else if (data.type === 'image' && (data.fileUrl || data.image)) {
-        const imgUrl = data.fileUrl || data.image;
-        contentHTML += `<img src="${imgUrl}" loading="lazy" style="width:100%; border-radius: 8px; display:block; margin-bottom:5px;">`;
+    } else if (data.type === 'image' && (data.fileUrl || data.image)) {
+        contentHTML += `<img src="${data.fileUrl || data.image}" loading="lazy" style="width:100%; border-radius: 8px; display:block; margin-bottom:5px;">`;
         if(data.text) contentHTML += generateTextHTML(data.text, id);
-    } 
-    
-    // 🔥 C. EMBED PRIORITY (FIXED)
-    // যদি লিংক হয় কিন্তু এর এম্বেড থাকে (যেমন Instagram/Facebook), তবে এম্বেড দেখাবে
-    else if (mediaEmbed) {
+    } else if (mediaEmbed) {
         contentHTML += mediaEmbed;
-        
-        // যদি টাইটেল থাকে (যেমন YouTube এর ক্ষেত্রে)
-        const videoTitle = data.title || data.metaTitle;
-        const isFacebook = data.text && (data.text.includes('facebook.com') || data.text.includes('fb.watch'));
-        
-        if(videoTitle && !isFacebook) {
-            contentHTML += `<div style="margin-top:10px; margin-bottom:5px; font-weight:600; font-size:15px; color:#1f2937; line-height:1.4;">${videoTitle}</div>`;
+        const autoCaption = (data.title && !data.title.includes("Instagram")) ? data.title : (data.description || "");
+        if (autoCaption && autoCaption !== "Instagram Post") {
+            contentHTML += `<div class="insta-caption" style="font-size: 13px; color: var(--text-main); margin: 10px 0; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; padding: 10px; background: rgba(37, 99, 235, 0.05); border-left: 3px solid #2563eb; border-radius: 4px;">${autoCaption}</div>`;
         }
-        
-        // অরিজিনাল লিংক বাটন
-        const linkText = isFacebook ? '🔵 View on Facebook' : '🔗 Open Original Link';
-        contentHTML += `<div style="text-align:right; margin-bottom:5px;"><a href="${data.text}" target="_blank" style="font-size:11px; color:#2563eb; text-decoration:none; font-weight:bold;">${linkText}</a></div>`;
-    }
-
-    // D. Generic Link Preview (যাদের এম্বেড নেই, যেমন ব্লগ বা নিউজ)
-    else if (data.type === 'link') {
-        const title = data.title || data.metaTitle || data.text;
-        const img = data.image || data.metaImg;
-        const domain = data.domain || data.metaDomain || 'Link';
-        contentHTML += `
-        <a href="${data.text}" target="_blank" style="text-decoration:none; color:inherit; display:block; border:1px solid rgba(0,0,0,0.1); border-radius:8px; overflow:hidden; background: rgba(255,255,255,0.6);">
-            ${img ? `<div style="height:140px; background-image: url('${img}'); background-size: cover; background-position: center;"></div>` : ''}
-            <div style="padding:10px;">
-                <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">${title}</h4>
-                <div style="font-size:11px; color:#666;">🔗 ${domain}</div>
-            </div>
-        </a>`;
-    } 
-    
-    // E. Plain Text
-    else {
+        contentHTML += `<div style="text-align:right; margin-top:5px;"><a href="${data.text}" target="_blank" style="font-size:11px; color:#2563eb; text-decoration:none; font-weight:bold;">🔗 Open Original Link</a></div>`;
+    } else if (data.type === 'link') {
+        contentHTML += `<a href="${data.text}" target="_blank" style="text-decoration:none; color:inherit; display:block; border:1px solid rgba(0,0,0,0.1); border-radius:8px; overflow:hidden; background: rgba(255,255,255,0.6);">${data.image ? `<div style="height:140px; background-image: url('${data.image}'); background-size: cover; background-position: center;"></div>` : ''}<div style="padding:10px;"><h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">${data.title || data.text}</h4><div style="font-size:11px; color:#666;">🔗 ${data.domain || 'Link'}</div></div></a>`;
+    } else {
         contentHTML += generateTextHTML(data.text || '', id);
     }
 
-    // Tags
-    if (data.tags && data.tags.length > 0) {
-        contentHTML += `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:5px; padding-top:5px; border-top:1px dashed rgba(0,0,0,0.05);">`;
-        data.tags.forEach(tag => {
-            contentHTML += `<span style="background:rgba(0,0,0,0.05); color:#2563eb; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:500;">#${tag}</span>`;
-        });
-        contentHTML += `</div>`;
-    }
-
-    // Footer
-    contentHTML += `<div class="card-footer" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid rgba(0,0,0,0.05);">
-        <small class="card-date" style="font-size:11px; color:#999;">${data.timestamp?.toDate().toLocaleDateString() || ''}</small>`;
-
-    if (isTrashView) {
-        contentHTML += `<div class="trash-actions" style="display:flex; gap:10px;"></div>`; 
-    } else {
-        contentHTML += `<button class="delete-btn context-trigger" style="background:none; border:none; cursor:pointer; font-size:20px; color:#666; padding:0 5px;">⋮</button>`;
-    }
-    contentHTML += `</div>`;
-
+    // Content Wrapper তৈরি এবং কার্ডে যোগ করা
     const contentWrapper = document.createElement('div');
     contentWrapper.innerHTML = contentHTML;
     card.appendChild(contentWrapper);
+
+    // Tags Section (Interactive)
+    const tagsWrapper = document.createElement('div');
+    tagsWrapper.style.cssText = "margin-top:10px; display:flex; flex-wrap:wrap; gap:5px; padding-top:5px; border-top:1px dashed rgba(0,0,0,0.05);";
+    
+    if (data.tags) {
+        data.tags.forEach((tag, index) => {
+            const tagSpan = document.createElement('span');
+            tagSpan.style.cssText = "background:rgba(0,0,0,0.05); color:#2563eb; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:500; cursor:pointer;";
+            tagSpan.innerHTML = `#${tag} <span style="color:red; margin-left:4px;">×</span>`;
+            tagSpan.onclick = async (e) => {
+                e.stopPropagation();
+                const newTags = data.tags.filter((_, i) => i !== index);
+                await updateNoteTagsDB(id, newTags);
+            };
+            tagsWrapper.appendChild(tagSpan);
+        });
+    }
+    const addTagBtn = document.createElement('span');
+    addTagBtn.innerText = "+ Tag";
+    addTagBtn.style.cssText = "font-size:11px; color:#999; cursor:pointer; padding:2px 8px; border:1px dashed #ccc; border-radius:12px;";
+    addTagBtn.onclick = async (e) => {
+        e.stopPropagation();
+        const newTag = prompt("Enter new tag:");
+        if (newTag) {
+            const updatedTags = [...(data.tags || []), newTag.replace('#', '').trim()];
+            await updateNoteTagsDB(id, updatedTags);
+        }
+    };
+    tagsWrapper.appendChild(addTagBtn);
+    card.appendChild(tagsWrapper);
+
+    // Footer
+    const footer = document.createElement('div');
+    footer.className = 'card-footer';
+    footer.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid rgba(0,0,0,0.05);";
+    
+    // তারিখ ফরম্যাট করার জন্য একটি সেফ ফাংশন
+    const formatNoteDate = (ts) => {
+        if (!ts) return "";
+        // যদি এটি ফায়ারবেস টাইমস্ট্যাম্প হয় (যাতে .toDate ফাংশন আছে)
+        if (typeof ts.toDate === 'function') {
+            return ts.toDate().toLocaleDateString();
+        }
+        // যদি এটি লোকাল স্টোরেজ থেকে আসা অবজেক্ট হয় (যাতে শুধু seconds আছে)
+        if (ts.seconds) {
+            return new Date(ts.seconds * 1000).toLocaleDateString();
+        }
+        // অন্যথায় সাধারণ ডেট হিসেবে রিটার্ন করবে
+        return new Date(ts).toLocaleDateString();
+    };
+
+    const leftFooter = document.createElement('div');
+    leftFooter.innerHTML = `<small style="font-size:11px; color:#999;">${formatNoteDate(data.timestamp)}</small>`;
+    footer.appendChild(leftFooter);
+
+    const rightActions = document.createElement('div');
+    rightActions.style.display = "flex";
+    rightActions.style.gap = "12px";
+    rightActions.style.alignItems = "center";
+
+    // 🔥 WhatsApp Direct Share Button
+    if (!isTrashView) {
+        const waBtn = document.createElement('button');
+        waBtn.innerHTML = ' <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="18" height="18" style="opacity:0.7;">';
+        waBtn.style.cssText = "background:none; border:none; cursor:pointer; display:flex; align-items:center;";
+        waBtn.title = "Share to WhatsApp";
+        waBtn.onclick = (e) => {
+            e.stopPropagation();
+            const shareText = data.text || "Check this out!";
+            const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+            window.open(waUrl, '_blank');
+        };
+        rightActions.appendChild(waBtn);
+    }
+
+    if (isTrashView) {
+        const rBtn = document.createElement('button'); rBtn.innerHTML='♻️'; 
+        rBtn.onclick = (e) => { e.stopPropagation(); callbacks.onRestore(id); };
+        const dBtn = document.createElement('button'); dBtn.innerHTML='❌'; 
+        dBtn.onclick = (e) => { e.stopPropagation(); callbacks.onDeleteForever(id); };
+        rightActions.appendChild(rBtn); rightActions.appendChild(dBtn);
+    } else {
+        const menuBtn = document.createElement('button');
+        menuBtn.className = 'delete-btn context-trigger';
+        menuBtn.innerHTML = '⋮';
+        menuBtn.style.fontSize = "20px";
+        menuBtn.onclick = (e) => { e.stopPropagation(); callbacks.onContextMenu(e, id); };
+        rightActions.appendChild(menuBtn);
+    }
+    
+    footer.appendChild(rightActions);
+    card.appendChild(footer);
 
     // Event Listeners
     const checkboxes = card.querySelectorAll('.task-checkbox');
@@ -195,7 +272,7 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
     });
 
     card.addEventListener('click', (e) => {
-        if(document.body.classList.contains('selection-mode') && !e.target.closest('button') && !e.target.closest('a') && !e.target.closest('.task-checkbox')) {
+        if(document.body.classList.contains('selection-mode') && !e.target.closest('button') && !e.target.closest('a') && !e.target.closest('.task-checkbox') && !e.target.closest('select')) {
             selectCheckbox.checked = !selectCheckbox.checked;
             selectCheckbox.dispatchEvent(new Event('change'));
         }
@@ -225,33 +302,19 @@ function generateTextHTML(text, noteId) {
         return html;
     }
 
-    // Marked.js কনফিগারেশন
+    // Marked.js কনফিগারেশন আপডেট
     const renderer = new marked.Renderer();
     
-    renderer.code = function(code, language) {
-        let codeContent = code;
-        let codeLang = language;
-
-        // 🔥 চেক করা হচ্ছে 'code' কি অবজেক্ট নাকি স্ট্রিং (নতুন ভার্সন ফিক্স)
-        if (typeof code === 'object' && code !== null) {
-            codeContent = code.text || code.raw || String(code) || "";
-            codeLang = code.lang || language;
-        }
-
-        // স্ট্রিং নিশ্চিত করা
-        codeContent = String(codeContent || '');
-        const validLang = (typeof hljs !== 'undefined' && hljs.getLanguage(codeLang)) ? codeLang : 'plaintext';
+    renderer.code = ({ text: codeContent, lang: language }) => {
+        const validLang = (typeof hljs !== 'undefined' && hljs.getLanguage(language)) ? language : 'plaintext';
         
         let highlighted;
         try {
-            if (typeof hljs !== 'undefined') {
-                highlighted = hljs.highlight(codeContent, { language: validLang }).value;
-            } else {
-                highlighted = codeContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            }
+            highlighted = typeof hljs !== 'undefined' 
+                ? hljs.highlight(codeContent, { language: validLang }).value 
+                : codeContent;
         } catch (e) {
-            console.warn("Highlight error:", e);
-            highlighted = codeContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            highlighted = codeContent;
         }
 
         return `
@@ -266,15 +329,8 @@ function generateTextHTML(text, noteId) {
         </div>`;
     };
 
-    marked.setOptions({ renderer: renderer });
-
-    // টেক্সট পার্সিং
-    let parsedText = "";
-    try {
-        parsedText = marked.parse(text);
-    } catch (e) {
-        parsedText = text;
-    }
+    // নতুন ভার্সনের জন্য parse অপশন
+    const parsedText = marked.parse(text, { renderer });
 
     // 🔥 Read More লজিক (FIXED)
     const tempDiv = document.createElement("div");

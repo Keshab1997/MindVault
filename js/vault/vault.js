@@ -295,32 +295,40 @@ window.copyUsername = (text) => {
 window.revealPass = (id, encryptedPass) => {
     const passField = document.getElementById(`pass-text-${id}`);
     if (passField.textContent !== "••••••••") { passField.textContent = "••••••••"; return; }
-    if (!masterKey) { requestMasterPassword(); return; }
+    if (!masterKey) { showMasterModal(); return; }
 
     try { 
         const encryptionKey = currentUser.uid + masterKey;
-        const decrypted = CryptoJS.AES.decrypt(encryptedPass, encryptionKey).toString(CryptoJS.enc.Utf8);
+        const bytes = CryptoJS.AES.decrypt(encryptedPass, encryptionKey);
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
         
-        if(decrypted) {
+        if(decrypted && decrypted.length > 0) {
             passField.textContent = decrypted;
+            passField.style.color = "var(--v-primary)";
         } else {
-            showToast("❌ Wrong Master Password!", "error");
+            throw new Error("Invalid Key");
         }
-    } catch (e) { showToast("❌ Decrypt Error", "error"); }
+    } catch (e) { 
+        showToast("❌ ভুল মাস্টার পাসওয়ার্ড বা ডিক্রিপশন এরর!", "error"); 
+    }
 };
 
 window.copyPass = (id, encryptedPass) => {
-    if (!masterKey) { requestMasterPassword(); return; }
+    if (!masterKey) { showMasterModal(); return; }
     try { 
         const encryptionKey = currentUser.uid + masterKey;
-        const decrypted = CryptoJS.AES.decrypt(encryptedPass, encryptionKey).toString(CryptoJS.enc.Utf8);
-        if(decrypted) {
+        const bytes = CryptoJS.AES.decrypt(encryptedPass, encryptionKey);
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        
+        if(decrypted && decrypted.length > 0) {
             navigator.clipboard.writeText(decrypted); 
             showToast("✅ Password copied!", "success"); 
         } else {
-            showToast("❌ Wrong Master Password!", "error");
+            throw new Error("Invalid Key");
         }
-    } catch (e) { showToast("❌ Copy Failed", "error"); }
+    } catch (e) { 
+        showToast("❌ ভুল মাস্টার পাসওয়ার্ড বা কপি ফেইল!", "error"); 
+    }
 };
 
 window.deleteSecret = async (id) => { 

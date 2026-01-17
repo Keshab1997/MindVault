@@ -45,7 +45,7 @@ export function extractTags(text) {
     if (!text) return [];
     const regex = /#(\w+)/g;
     const matches = text.match(regex);
-    return matches ? matches.map(tag => tag.substring(1)) : []; // # ছাড়া শুধু শব্দটা রিটার্ন করবে
+    return matches ? matches.map(tag => tag.substring(1)).filter(t => !t.includes('http')) : []; // # ছাড়া শুধু শব্দটা রিটার্ন করবে
 }
 
 // ৬. Universal Media Embed
@@ -66,13 +66,23 @@ export function getUniversalEmbedHTML(text) {
     const instaMatch = url.match(instaRegex);
     
     if (instaMatch) {
-        const postType = instaMatch[1]; // p, reel, or tv
+        const postType = instaMatch[1]; 
         const postId = instaMatch[2];
         const cleanUrl = `https://www.instagram.com/${postType}/${postId}`;
-        const embedUrl = `${cleanUrl}/embed/captioned/`;
+        
+        // 'captioned/' যোগ করা হয়েছে কারণ এটি বেশি স্ট্যাবল, কিন্তু আমরা CSS দিয়ে ক্যাপশন হাইড করবো
+        const embedUrl = `${cleanUrl}/embed/captioned/`; 
 
-        return `<div style="overflow: hidden; border-radius: 12px; border: 1px solid #dbdbdb; margin-bottom:10px; background: #fff;">
-                <iframe src="${embedUrl}" style="width: 100%; height: 550px; border: 0;" frameborder="0" scrolling="no" allowtransparency="true" allowfullscreen></iframe>
+        // Container height বাড়িয়ে ৪২০ করা হয়েছে যাতে প্লেয়ারটি ঠিকমতো ইনিশিয়ালাইজ হতে পারে
+        return `<div style="overflow: hidden; border-radius: 12px; border: 1px solid #dbdbdb; margin-bottom:10px; background: #000; height: 420px; position: relative;">
+                <iframe src="${embedUrl}" 
+                    style="width: 100%; height: 750px; border: 0; position: absolute; top: -50px; left: 0;" 
+                    frameborder="0" 
+                    scrolling="no" 
+                    allowtransparency="true" 
+                    allowfullscreen 
+                    referrerpolicy="strict-origin-when-cross-origin">
+                </iframe>
                 </div>`;
     }
 
@@ -115,7 +125,9 @@ export function optimizeCloudinaryUrl(url) {
 
 // 🔥 অটো ট্যাগ জেনারেটর (টেক্সট + মেটাডাটা থেকে)
 export function generateAutoTags(text, metadata = {}) {
-    let combinedText = text + " " + (metadata.title || "") + " " + (metadata.description || "");
+    // URL গুলোকে টেক্সট থেকে সরিয়ে ফেলা হচ্ছে যাতে সেগুলো ট্যাগ না হয়
+    let cleanText = text.replace(/(https?:\/\/[^\s]+)/g, "");
+    let combinedText = cleanText + " " + (metadata.title || "") + " " + (metadata.description || "");
     
     // ১. হ্যাশট্যাগগুলো খুঁজে বের করা (#example)
     const hashtagRegex = /#(\w+)/g;
@@ -125,7 +137,7 @@ export function generateAutoTags(text, metadata = {}) {
     const words = combinedText.toLowerCase()
         .replace(/[^\w\s]/g, '') // স্পেশাল ক্যারেক্টার রিমুভ
         .split(/\s+/)
-        .filter(word => word.length > 4 && !['https', 'www', 'com', 'video', 'photo', 'instagram', 'facebook', 'youtube'].includes(word));
+        .filter(word => word.length > 4 && !['https', 'www', 'com', 'instagram', 'facebook', 'youtube'].includes(word));
 
     // ৩. সব ট্যাগ মিলিয়ে ইউনিক ট্যাগ লিস্ট তৈরি (সর্বোচ্চ ৮টি)
     const allTags = [...new Set([...hashtags, ...words])];

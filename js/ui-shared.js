@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <footer class="main-footer" style="padding: 20px 0; text-align: center; background: transparent;">
                 <div style="margin-bottom: 10px;">
                     <p style="margin: 0; font-size: 14px; color: #555;">
-                        &copy; ${year} <strong>MyBrain</strong>. Your Digital Second Brain.
+                        &copy; ${year} <strong>MindVault</strong>. Your Digital Second Brain.
                     </p>
                     <p style="margin: 5px 0 0; font-size: 13px; color: #777;">
                         Crafted with <span style="color: #e25555; font-size:16px;">&hearts;</span> by 

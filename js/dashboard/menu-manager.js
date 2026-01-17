@@ -93,9 +93,13 @@ export function setupModals() {
         if(currentEditId) {
             const docSnap = await getDoc(doc(db, "notes", currentEditId));
             if(docSnap.exists()) {
-                const text = docSnap.data().text || docSnap.data().fileUrl;
-                navigator.clipboard.writeText(text);
-                alert("Copied to clipboard!");
+                let text = docSnap.data().text || docSnap.data().fileUrl || "";
+                
+                // 🔥 হ্যাশট্যাগ (#tag) রিমুভ করার লজিক
+                const cleanText = text.replace(/#\w+/g, '').replace(/\s\s+/g, ' ').trim();
+                
+                navigator.clipboard.writeText(cleanText);
+                alert("Copied to clipboard (without tags)!");
             }
             contextMenu.style.display = 'none';
         }
@@ -126,6 +130,44 @@ export function setupModals() {
         shareModal.style.display = 'flex';
         contextMenu.style.display = 'none';
     });
+
+    // Share Modal Logic
+    const handleShare = async (platform) => {
+        const docSnap = await getDoc(doc(db, "notes", currentEditId));
+        if (!docSnap.exists()) return;
+        
+        const data = docSnap.data();
+        const text = data.text || "";
+        const url = window.location.href;
+        let shareUrl = "";
+
+        switch (platform) {
+            case 'wa':
+                shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                break;
+            case 'fb':
+                shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(text)}`;
+                break;
+            case 'tg':
+                shareUrl = `https://t.me/share/url?url=${encodeURIComponent(text)}`;
+                break;
+            case 'copy':
+                // 🔥 হ্যাশট্যাগ রিমুভ করে কপি করা
+                const cleanText = text.replace(/#\w+/g, '').replace(/\s\s+/g, ' ').trim();
+                navigator.clipboard.writeText(cleanText);
+                alert("Copied to clipboard (without tags)!");
+                document.getElementById('shareModal').style.display = 'none';
+                return;
+        }
+        
+        if (shareUrl) window.open(shareUrl, '_blank');
+        document.getElementById('shareModal').style.display = 'none';
+    };
+
+    document.getElementById('share-wa')?.addEventListener('click', () => handleShare('wa'));
+    document.getElementById('share-fb')?.addEventListener('click', () => handleShare('fb'));
+    document.getElementById('share-tg')?.addEventListener('click', () => handleShare('tg'));
+    document.getElementById('share-copy')?.addEventListener('click', () => handleShare('copy'));
 
     // --- ক্লোজ লজিক ---
     
