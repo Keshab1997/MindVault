@@ -294,7 +294,12 @@ window.copyUsername = (text) => {
 
 window.revealPass = (id, encryptedPass) => {
     const passField = document.getElementById(`pass-text-${id}`);
-    if (passField.textContent !== "••••••••") { passField.textContent = "••••••••"; return; }
+    if (passField.textContent !== "••••••••") { 
+        passField.textContent = "••••••••"; 
+        passField.style.color = "inherit";
+        return; 
+    }
+    
     if (!masterKey) { showMasterModal(); return; }
 
     try { 
@@ -302,14 +307,18 @@ window.revealPass = (id, encryptedPass) => {
         const bytes = CryptoJS.AES.decrypt(encryptedPass, encryptionKey);
         const decrypted = bytes.toString(CryptoJS.enc.Utf8);
         
-        if(decrypted && decrypted.length > 0) {
-            passField.textContent = decrypted;
-            passField.style.color = "var(--v-primary)";
-        } else {
-            throw new Error("Invalid Key");
+        if(!decrypted) {
+            throw new Error("Wrong Key");
         }
+        
+        passField.textContent = decrypted;
+        passField.style.color = "#10b981"; // Success color
     } catch (e) { 
-        showToast("❌ ভুল মাস্টার পাসওয়ার্ড বা ডিক্রিপশন এরর!", "error"); 
+        showToast("❌ ভুল মাস্টার পাসওয়ার্ড! আবার চেষ্টা করুন।", "error");
+        // ভুল পাসওয়ার্ড হলে সেশন ক্লিয়ার করে দেওয়া ভালো
+        sessionStorage.removeItem('vault_master_key');
+        masterKey = null;
+        showMasterModal();
     }
 };
 

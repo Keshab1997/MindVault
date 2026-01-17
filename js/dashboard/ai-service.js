@@ -24,8 +24,8 @@ export async function askAI(taskType, text) {
         const data = await response.json();
         return data.message || processWithFallback(taskType, text);
     } catch (error) {
-        console.warn('AI Fetch failed, using local logic');
-        return processWithFallback(taskType, text);
+        console.warn('AI service temporarily unavailable, using fallback');
+        throw new Error("🤖 AI বর্তমানে ব্যস্ত আছে। কিছুক্ষণ পর চেষ্টা করুন।");
     }
 }
 

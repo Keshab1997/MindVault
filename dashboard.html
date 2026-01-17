@@ -52,50 +52,45 @@
 
 <div class="container">
 
-<div class="input-area" style="margin-bottom: 20px;">
+<div class="input-area compact-input-box">
     <textarea id="noteInput" placeholder="Save a note, link or idea... (supports Markdown)"></textarea>
     
-    <div class="folder-selector-wrapper" style="margin-bottom: 10px;">
-        <label style="font-size: 12px; color: #666;">Save to:</label>
-        <select id="folderSelect" class="folder-dropdown">
-            <option value="General">General</option>
-        </select>
+    <!-- প্রিভিউ কন্টেইনারগুলো কম্প্যাক্ট স্টাইলে -->
+    <div id="image-preview-container" class="compact-preview" style="display: none;">
+        <img id="image-preview" src="" alt="Preview">
+        <button id="remove-image-btn">×</button>
     </div>
-    
-    <div class="color-palette-wrapper" style="margin: 10px 0; display: flex; gap: 10px; align-items: center;">
-        <span style="font-size: 12px; color: #666;">Color:</span>
-        <div class="color-options">
-            <input type="radio" name="noteColor" id="c-white" value="#ffffff" checked hidden>
-            <label for="c-white" class="color-circle" style="background:#ffffff; border:1px solid #ccc;" title="White"></label>
-            <input type="radio" name="noteColor" id="c-red" value="#ffcdd2" hidden>
-            <label for="c-red" class="color-circle" style="background:#ffcdd2;" title="Red"></label>
-            <input type="radio" name="noteColor" id="c-yellow" value="#fff9c4" hidden>
-            <label for="c-yellow" class="color-circle" style="background:#fff9c4;" title="Yellow"></label>
-            <input type="radio" name="noteColor" id="c-green" value="#c8e6c9" hidden>
-            <label for="c-green" class="color-circle" style="background:#c8e6c9;" title="Green"></label>
-            <input type="radio" name="noteColor" id="c-blue" value="#bbdefb" hidden>
-            <label for="c-blue" class="color-circle" style="background:#bbdefb;" title="Blue"></label>
+
+    <div id="audio-preview-container" class="compact-preview" style="display: none;">
+        <audio id="audio-preview" controls></audio>
+        <button id="remove-audio-btn">×</button>
+    </div>
+
+    <div class="input-bottom-bar">
+        <div class="action-tools">
+            <span class="tool-icon" id="triggerFile" title="Add Image">📷</span>
+            <span class="tool-icon" id="btn-mic" title="Record Audio">🎤</span>
+            
+            <div class="ai-dropdown-wrapper">
+                <button id="btn-ai" class="ai-compact-btn">🪄 AI Tools</button>
+                <div id="ai-menu" class="ai-menu-popup">
+                    <div class="ai-option" data-task="grammar">✨ Fix Grammar</div>
+                    <div class="ai-option" data-task="summary">📝 Summarize</div>
+                    <div class="ai-option" data-task="tags">🏷️ Generate Tags</div>
+                </div>
+            </div>
+            <span id="recording-status" class="status-dot">● Rec</span>
+            <span id="ai-status" class="status-text">Thinking...</span>
+        </div>
+
+        <div class="save-section">
+            <select id="folderSelect" class="folder-minimal">
+                <option value="General">📁 General</option>
+            </select>
+            <button id="saveBtn" class="btn-save-brain">Save to Brain</button>
         </div>
     </div>
-
-    <div id="image-preview-container" style="display: none; margin: 10px 0; position: relative; width: fit-content;">
-        <img id="image-preview" src="" alt="Selected Image" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #ddd;">
-        <button id="remove-image-btn" style="position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;">×</button>
-    </div>
-
-    <div id="audio-preview-container" style="display: none; margin: 10px 0; padding: 15px; background: #f1f5f9; border-radius: 12px; border: 1px solid #cbd5e1; position: relative;">
-        <p style="font-size: 12px; color: #64748b; margin-bottom: 8px; font-weight: 600;">🎤 Audio Preview:</p>
-        <audio id="audio-preview" controls style="width: 100%; height: 40px;"></audio>
-        <button id="remove-audio-btn" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold;">×</button>
-    </div>
-
-    <div class="input-actions">
-        <div class="action-icons">
-            <span class="action-icon" id="triggerFile" title="Add Image" style="cursor:pointer; font-size:1.2rem;">📷</span>
-        </div>
-        <input type="file" id="fileInput" accept="image/*" style="display: none;">
-        <button id="saveBtn" class="btn btn-primary">Save to Brain</button>
-    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display: none;">
     <p id="uploadStatus" style="display:none; color: green; font-size: 12px; margin-top:5px;">Uploading...</p>
 </div>
 
@@ -111,7 +106,9 @@
         
         <div class="search-and-view">
             <div class="search-wrapper">
-                <input type="text" id="searchInput" placeholder="🔍 Search...">
+                <input type="text" id="searchInput" placeholder="🔍 Search..." autocomplete="off">
+                <!-- সাজেশন বক্সটি এখানে যোগ করুন -->
+                <div id="searchSuggestions" class="suggestions-list"></div>
             </div>
             
             <div id="selection-controls" style="display: flex; gap: 5px;">
@@ -157,14 +154,16 @@
 </div>
 
 <div id="contextMenu" class="context-menu" style="display: none;">
-<ul>
-<li id="ctx-edit">✏️ Edit</li>
-<li id="ctx-copy">📋 Copy</li>
-<li id="ctx-pin">📌 Pin/Unpin</li>
-<li id="ctx-share">📤 Share</li>
-<li id="ctx-download">⬇️ Download</li>
-<li id="ctx-trash" style="color:red; border-top:1px solid #eee;">🗑️ Move to Trash</li>
-</ul>
+    <!-- Handle Bar -->
+    <div style="width: 40px; height: 5px; background: #ccc; border-radius: 10px; margin: 5px auto 15px auto;"></div>
+    <ul>
+        <li id="ctx-edit">✏️ Edit Note</li>
+        <li id="ctx-copy">📋 Copy Content</li>
+        <li id="ctx-pin">📌 Pin/Unpin</li>
+        <li id="ctx-share">📤 Share Note</li>
+        <li id="ctx-download">⬇️ Download File</li>
+        <li id="ctx-trash" style="color:red; border-top:1px solid #eee;">🗑️ Move to Trash</li>
+    </ul>
 </div>
 
 <div id="shareModal" class="custom-modal" style="display: none;">

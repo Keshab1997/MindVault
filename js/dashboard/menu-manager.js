@@ -5,9 +5,10 @@ import { getDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-
 import * as DBService from "../core/firebase-service.js";
 import * as Utils from "../core/utils.js";
 
+import { showToast } from "../ui-shared.js";
+
 let currentEditId = null;
 
-// ১. মেনু ওপেন করার ফাংশন
 export async function openContextMenu(e, id) {
     e.stopPropagation();
     e.preventDefault();
@@ -15,26 +16,35 @@ export async function openContextMenu(e, id) {
     currentEditId = id;
     const menu = document.getElementById('contextMenu');
     
-    // পিন স্ট্যাটাস চেক করে টেক্সট আপডেট
+    // ব্যাকড্রপ তৈরি (যদি না থাকে)
+    let backdrop = document.querySelector('.menu-backdrop');
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.className = 'menu-backdrop';
+        document.body.appendChild(backdrop);
+        backdrop.onclick = () => closeMenu();
+    }
+
+    // পিন টেক্সট আপডেট
     const docSnap = await getDoc(doc(db, "notes", id));
     if(docSnap.exists()) {
         const data = docSnap.data();
         const pinBtn = document.getElementById('ctx-pin');
-        if(pinBtn) pinBtn.innerHTML = data.isPinned ? "🚫 Unpin" : "📌 Pin";
+        if(pinBtn) pinBtn.innerHTML = data.isPinned ? "🚫 Unpin Note" : "📌 Pin Note";
     }
 
-    // মেনু পজিশন ঠিক করা (যাতে স্ক্রিনের বাইরে না যায়)
-    const menuWidth = 160;
-    const menuHeight = 200;
-    let x = e.pageX;
-    let y = e.pageY;
-
-    if (x + menuWidth > window.innerWidth) x -= menuWidth;
-    if (y + menuHeight > window.scrollY + window.innerHeight) y -= menuHeight;
-
-    menu.style.top = `${y}px`; 
-    menu.style.left = `${x}px`; 
+    // মেনু এবং ব্যাকড্রপ দেখানো
+    backdrop.style.display = 'block';
+    menu.classList.add('active');
     menu.style.display = 'block';
+}
+
+// মেনু বন্ধ করার ফাংশন
+function closeMenu() {
+    const menu = document.getElementById('contextMenu');
+    const backdrop = document.querySelector('.menu-backdrop');
+    if (menu) menu.classList.remove('active');
+    if (backdrop) backdrop.style.display = 'none';
 }
 
 // ২. রিড মোডাল ওপেন
@@ -58,77 +68,102 @@ export function openReadModal(data, id) {
     modal.style.display = 'flex';
 }
 
-// ৩. সব বাটনের ইভেন্ট লিসেনার সেটআপ
 export function setupModals() {
     const contextMenu = document.getElementById('contextMenu');
-    const editModal = document.getElementById('editModal');
-    const shareModal = document.getElementById('shareModal');
-    const readModal = document.getElementById('readModal');
 
-    // --- অ্যাকশন বাটন ---
-
-    // Delete (Trash)
-    document.getElementById('ctx-trash')?.addEventListener('click', () => {
-        if(currentEditId) {
-            if(confirm("Move this note to Trash?")) {
-                DBService.moveToTrashDB(currentEditId);
-            }
-            contextMenu.style.display = 'none';
-        }
-    });
-
-    // Pin / Unpin
-    document.getElementById('ctx-pin')?.addEventListener('click', async () => {
-        if(currentEditId) {
-            const docSnap = await getDoc(doc(db, "notes", currentEditId));
-            if(docSnap.exists()) {
-                DBService.togglePinDB(currentEditId, docSnap.data().isPinned);
-            }
-            contextMenu.style.display = 'none';
-        }
-    });
-
-    // Copy
+    // ২. কপি ফাংশন (Copy Text/Link)
     document.getElementById('ctx-copy')?.addEventListener('click', async () => {
-        if(currentEditId) {
-            const docSnap = await getDoc(doc(db, "notes", currentEditId));
-            if(docSnap.exists()) {
-                let text = docSnap.data().text || docSnap.data().fileUrl || "";
-                
-                // 🔥 হ্যাশট্যাগ (#tag) রিমুভ করার লজিক
-                const cleanText = text.replace(/#\w+/g, '').replace(/\s\s+/g, ' ').trim();
-                
-                navigator.clipboard.writeText(cleanText);
-                alert("Copied to clipboard (without tags)!");
-            }
-            contextMenu.style.display = 'none';
+        if(!currentEditId) return;
+        const docSnap = await getDoc(doc(db, "notes", currentEditId));
+        if(docSnap.exists()) {
+            const data = docSnap.data();
+            const textToCopy = data.text || data.fileUrl || "";
+            // হ্যাশট্যাগ রিমুভ করে ক্লিন টেক্সট কপি
+            const cleanText = textToCopy.replace(/#\w+/g, '').trim();
+            
+            navigator.clipboard.writeText(cleanText).then(() => {
+                showToast("📋 Copied to clipboard!");
+            });
         }
+        closeMenu();
     });
 
-    // Edit
-    document.getElementById('ctx-edit')?.addEventListener('click', async () => {
-        if(currentEditId) {
-            const docSnap = await getDoc(doc(db, "notes", currentEditId));
-            if(docSnap.exists()) {
-                document.getElementById('editNoteInput').value = docSnap.data().text || "";
-                editModal.style.display = 'flex';
-            }
-            contextMenu.style.display = 'none';
+    // ৩. পিন/আনপিন ফাংশন
+    document.getElementById('ctx-pin')?.addEventListener('click', async () => {
+        if(!currentEditId) return;
+        const docRef = doc(db, "notes", currentEditId);
+        const docSnap = await getDoc(docRef);
+        if(docSnap.exists()) {
+            const newStatus = !docSnap.data().isPinned;
+            await DBService.togglePinDB(currentEditId, docSnap.data().isPinned);
+            showToast(newStatus ? "📌 Pinned to top" : "🚫 Unpinned");
         }
+        closeMenu();
+    });
+
+    // ৪. ডাউনলোড ফাংশন (Image/Audio/Text)
+    document.getElementById('ctx-download')?.addEventListener('click', async () => {
+        if(!currentEditId) return;
+        const docSnap = await getDoc(doc(db, "notes", currentEditId));
+        if(docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.fileUrl) {
+                // ইমেজ বা অডিও হলে সরাসরি ডাউনলোড
+                const link = document.createElement('a');
+                link.href = data.fileUrl;
+                link.download = `MindVault_${data.type}_${currentEditId}`;
+                link.target = "_blank";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // টেক্সট নোট হলে .txt ফাইল হিসেবে ডাউনলোড
+                const blob = new Blob([data.text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = "note.txt";
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+            showToast("⬇️ Downloading...");
+        }
+        closeMenu();
+    });
+
+    // ৫. এডিট ফাংশন (Edit Modal Open)
+    document.getElementById('ctx-edit')?.addEventListener('click', async () => {
+        if(!currentEditId) return;
+        const docSnap = await getDoc(doc(db, "notes", currentEditId));
+        if(docSnap.exists()) {
+            document.getElementById('editNoteInput').value = docSnap.data().text || "";
+            document.getElementById('editModal').style.display = 'flex';
+        }
+        closeMenu();
+    });
+
+    // ৬. ট্র্যাশ ফাংশন (Move to Trash)
+    document.getElementById('ctx-trash')?.addEventListener('click', () => {
+        if(currentEditId && confirm("Move this note to Trash?")) {
+            DBService.moveToTrashDB(currentEditId);
+            showToast("🗑️ Moved to Trash", "error");
+        }
+        closeMenu();
+    });
+
+    // ৭. শেয়ার ফাংশন (Share Modal Open)
+    document.getElementById('ctx-share')?.addEventListener('click', () => {
+        document.getElementById('shareModal').style.display = 'flex';
+        closeMenu();
     });
 
     // Update Note (Edit Save)
     document.getElementById('updateNoteBtn')?.addEventListener('click', async () => {
         if(currentEditId) {
             await DBService.updateNoteContentDB(currentEditId, document.getElementById('editNoteInput').value);
-            editModal.style.display = 'none';
+            document.getElementById('editModal').style.display = 'none';
+            showToast("✅ Note updated!");
         }
-    });
-
-    // Share
-    document.getElementById('ctx-share')?.addEventListener('click', () => {
-        shareModal.style.display = 'flex';
-        contextMenu.style.display = 'none';
     });
 
     // Share Modal Logic
@@ -138,7 +173,6 @@ export function setupModals() {
         
         const data = docSnap.data();
         const text = data.text || "";
-        const url = window.location.href;
         let shareUrl = "";
 
         switch (platform) {
@@ -152,10 +186,9 @@ export function setupModals() {
                 shareUrl = `https://t.me/share/url?url=${encodeURIComponent(text)}`;
                 break;
             case 'copy':
-                // 🔥 হ্যাশট্যাগ রিমুভ করে কপি করা
                 const cleanText = text.replace(/#\w+/g, '').replace(/\s\s+/g, ' ').trim();
                 navigator.clipboard.writeText(cleanText);
-                alert("Copied to clipboard (without tags)!");
+                showToast("📋 Copied to clipboard (without tags)!");
                 document.getElementById('shareModal').style.display = 'none';
                 return;
         }
@@ -168,8 +201,6 @@ export function setupModals() {
     document.getElementById('share-fb')?.addEventListener('click', () => handleShare('fb'));
     document.getElementById('share-tg')?.addEventListener('click', () => handleShare('tg'));
     document.getElementById('share-copy')?.addEventListener('click', () => handleShare('copy'));
-
-    // --- ক্লোজ লজিক ---
     
     // বাইরে ক্লিক করলে মেনু বন্ধ হবে
     window.addEventListener('click', (e) => {

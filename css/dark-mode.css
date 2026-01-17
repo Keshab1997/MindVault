@@ -90,3 +90,92 @@ input[type="password"],
     color: #ffffff !important;
     border-color: var(--primary-color) !important;
 }
+
+/* Context Menu Dark Mode Fix */
+body.dark-mode .context-menu {
+    background-color: #262626 !important;
+    border: 1px solid #404040 !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .context-menu ul li {
+    color: #e5e7eb !important;
+    border-bottom: 1px solid #333;
+}
+
+body.dark-mode .context-menu ul li:hover {
+    background-color: #3f3f3f !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode #ctx-trash {
+    color: #ff6b6b !important;
+    border-top: 1px solid #444 !important;
+}
+
+body.dark-mode .context-menu ul li span, 
+body.dark-mode .context-menu ul li i {
+    filter: brightness(1.2);
+}
+
+/* Context Menu কে Fixed Bottom Sheet বানানো */
+.context-menu {
+    position: fixed !important;
+    bottom: -100%; /* শুরুতে স্ক্রিনের নিচে লুকিয়ে থাকবে */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: auto !important; /* আগের top পজিশন বাতিল */
+    width: 100%;
+    max-width: 450px; /* ডেস্কটপে খুব বেশি চওড়া হবে না */
+    background: var(--bg-card, #ffffff);
+    border-radius: 20px 20px 0 0; /* উপরের কোণা গোল */
+    box-shadow: 0 -10px 25px rgba(0,0,0,0.2);
+    transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10001;
+    padding: 10px 0;
+    border: none;
+}
+
+/* মেনু যখন দেখাবে */
+.context-menu.active {
+    bottom: 0 !important;
+}
+
+/* মেনুর আইটেমগুলো বড় এবং টাচ ফ্রেন্ডলি করা */
+.context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-menu ul li {
+    padding: 15px 25px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.context-menu ul li:last-child {
+    border-bottom: none;
+}
+
+.context-menu ul li:hover {
+    background-color: var(--bg-hover, #f9fafb);
+}
+
+/* ব্যাকড্রপ (মেনু খুললে চারপাশ ঝাপসা হবে) */
+.menu-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(3px);
+    display: none;
+    z-index: 10000;
+}

@@ -49,7 +49,10 @@ export async function updateNoteContentDB(id, text) {
 }
 
 export async function togglePinDB(id, currentStatus) {
-    await updateDoc(doc(db, "notes", id), { isPinned: !currentStatus });
+    await updateDoc(doc(db, "notes", id), { 
+        isPinned: !currentStatus,
+        timestamp: serverTimestamp() // পিন করলে সেটি উপরে আসার জন্য টাইমস্ট্যাম্প আপডেট
+    });
 }
 
 // 🔥 Batch Delete (Multi-Select)

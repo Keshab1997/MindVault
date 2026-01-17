@@ -43,19 +43,20 @@ export async function loadNotes(uid, filterType = 'All', filterValue = null) {
     // সিলেকশন বাটন শো করা
     if(selectionControls) selectionControls.style.display = 'flex';
 
-    // কুয়েরি তৈরি
+    // কুয়েরি তৈরি - পিন করা নোটগুলো মেইন গ্রিড থেকে বাদ দিতে হবে
     if (filterType === 'trash') {
         DBService.cleanupOldTrashDB(uid);
         q = query(notesRef, where("uid", "==", uid), where("status", "==", "trash"), orderBy("timestamp", "desc"));
     } else if (filterType === 'folder') {
         loadPinnedNotes(uid); 
-        q = query(notesRef, where("uid", "==", uid), where("status", "==", "active"), where("folder", "==", filterValue), orderBy("timestamp", "desc"));
+        q = query(notesRef, where("uid", "==", uid), where("status", "==", "active"), where("folder", "==", filterValue), where("isPinned", "==", false), orderBy("timestamp", "desc"));
     } else if (filterType !== 'All' && filterType !== 'all') {
         loadPinnedNotes(uid);
-        q = query(notesRef, where("uid", "==", uid), where("status", "==", "active"), where("type", "==", filterType), orderBy("timestamp", "desc"));
+        q = query(notesRef, where("uid", "==", uid), where("status", "==", "active"), where("type", "==", filterType), where("isPinned", "==", false), orderBy("timestamp", "desc"));
     } else {
         loadPinnedNotes(uid); 
-        q = query(notesRef, where("uid", "==", uid), where("status", "==", "active"), orderBy("timestamp", "desc"));
+        // 'All' ভিউতে শুধু পিন না করা নোটগুলো দেখাবে
+        q = query(notesRef, where("uid", "==", uid), where("status", "==", "active"), where("isPinned", "==", false), orderBy("timestamp", "desc"));
     }
 
     if (unsubscribeNotes) unsubscribeNotes();
@@ -65,8 +66,10 @@ export async function loadNotes(uid, filterType = 'All', filterValue = null) {
         const notes = [];
         snapshot.forEach(doc => notes.push({ id: doc.id, ...doc.data() }));
 
-        // ৩. লোকাল ডেটাবেসে সেভ করুন
-        if (filterType === 'All') await localDB.saveNotes(notes);
+        // ৩. শুধুমাত্র 'All' ফিল্টারে থাকলে লোকাল ডিবি আপডেট করুন
+        if (filterType === 'All' || filterType === 'all') {
+            await localDB.saveNotes(notes);
+        }
 
         // ৪. UI আপডেট করুন
         renderNotesToUI(notes, contentGrid, filterType, uid);
@@ -122,6 +125,7 @@ function renderNotesToUI(notes, container, filterType, uid) {
     }
 
     notes.forEach((noteData) => {
+        // পিন করা নোট এবং ট্র্যাশ ভিউ চেক
         if (filterType !== 'trash' && noteData.isPinned) return;
 
         // Mock docSnap object for UI compatibility
@@ -146,7 +150,7 @@ function renderNotesToUI(notes, container, filterType, uid) {
 }
 
 function loadPinnedNotes(uid) {
-    const q = query(collection(db, "notes"), where("uid", "==", uid), where("isPinned", "==", true), where("status", "==", "active"));
+    const q = query(collection(db, "notes"), where("uid", "==", uid), where("isPinned", "==", true), where("status", "==", "active"), orderBy("timestamp", "desc"));
     const pinSection = document.getElementById('pinned-section');
     const pinGrid = document.getElementById('pinned-grid');
 
@@ -268,8 +272,8 @@ export function setupNoteSaving(user) {
     const audioPreview = document.getElementById('audio-preview');
     const removeAudioBtn = document.getElementById('remove-audio-btn');
 
-    // 🔥 শেয়ার করা ছবি হ্যান্ডেল করা
-    window.addEventListener('DOMContentLoaded', async () => {
+    // 🔥 শেয়ার করা ছবি হ্যান্ডেল করার জন্য আলাদা ফাংশন
+    async function handleSharedContent() {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('shared')) {
             try {
@@ -279,30 +283,27 @@ export function setupNoteSaving(user) {
                     const blob = await response.blob();
                     const file = new File([blob], "shared_image.jpg", { type: blob.type });
                     
-                    // ফাইল ইনপুটে সেট করা
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    fileInput.files = dataTransfer.files;
-
                     // প্রিভিউ দেখানো
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         imagePreview.src = e.target.result;
                         previewContainer.style.display = 'block';
+                        // ফাইলটি একটি ভেরিয়েবলে সেভ করে রাখা যাতে সেভ বাটনে ক্লিক করলে পাওয়া যায়
+                        window.sharedFile = file; 
                     };
                     reader.readAsDataURL(file);
                     
                     saveBtn.innerText = "Save Shared Image";
-                    // ক্যাশ ক্লিয়ার করা
                     await cache.delete('shared-image');
-                    // URL ক্লিন করা
                     window.history.replaceState({}, document.title, "dashboard.html");
                 }
             } catch (e) {
                 console.error("Error receiving shared image:", e);
             }
         }
-    });
+    }
+
+    handleSharedContent(); // ফাংশনটি কল করুন
 
     // 🔥 AI বাটন এবং টুলবার (আপডেটেড)
     const toolbarHTML = `
@@ -490,9 +491,10 @@ export function setupNoteSaving(user) {
 
     saveBtn.addEventListener('click', async () => {
         const rawText = noteInput.value;
-        const file = fileInput.files[0];
+        // window.sharedFile চেক করুন যদি সাধারণ ফাইল ইনপুট খালি থাকে
+        const file = fileInput.files[0] || window.sharedFile;
         const targetFolder = document.getElementById('folderSelect')?.value || "General";
-        const selectedColor = document.querySelector('input[name="noteColor"]:checked')?.value || "#ffffff";
+        const selectedColor = "#ffffff"; // ডিফল্ট সাদা রং
 
         if (!rawText && !file && !androidSharedImage && !audioBlob) return showToast("⚠️ Empty note!", "error");
 

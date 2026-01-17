@@ -39,11 +39,14 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         dragIcon.className = 'drag-handle';
         dragIcon.innerHTML = '⋮⋮'; 
         card.appendChild(dragIcon);
+        
+        // পিন ইন্ডিকেটর যোগ করা
         if(data.isPinned) {
-            const pin = document.createElement('div');
-            pin.className = 'pin-indicator';
-            pin.innerHTML = '📌';
-            card.appendChild(pin);
+            const pinIcon = document.createElement('div');
+            pinIcon.className = 'pin-indicator';
+            pinIcon.innerHTML = '📌';
+            card.appendChild(pinIcon);
+            card.style.border = "2px solid #2563eb"; // পিন করা নোটের বর্ডার নীল হবে
         }
     }
 
@@ -285,6 +288,18 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
 function generateTextHTML(text, noteId) {
     if (!text) return "";
 
+    // Marked options সেটআপ
+    marked.setOptions({
+        highlight: function(code, lang) {
+            if (lang && hljs.getLanguage(lang)) {
+                return hljs.highlight(code, { language: lang }).value;
+            }
+            return hljs.highlightAuto(code).value;
+        },
+        breaks: true,
+        gfm: true
+    });
+
     // চেকলিস্ট হ্যান্ডলিং
     if (text.includes('- [ ]') || text.includes('- [x]')) {
         let lines = text.split('\n');
@@ -302,89 +317,34 @@ function generateTextHTML(text, noteId) {
         return html;
     }
 
-    // Marked.js কনফিগারেশন আপডেট
-    const renderer = new marked.Renderer();
-    
-    renderer.code = ({ text: codeContent, lang: language }) => {
-        const validLang = (typeof hljs !== 'undefined' && hljs.getLanguage(language)) ? language : 'plaintext';
-        
-        let highlighted;
-        try {
-            highlighted = typeof hljs !== 'undefined' 
-                ? hljs.highlight(codeContent, { language: validLang }).value 
-                : codeContent;
-        } catch (e) {
-            highlighted = codeContent;
-        }
+    const parsedText = marked.parse(text);
 
+    // Read More লজিক ফিক্স: কন্টেন্ট যদি খুব ছোট হয় তবে বাটন দেখাবে না
+    const charLimit = 250;
+    if (text.length > charLimit) {
+        const uniqueId = `note-content-${noteId}`;
         return `
-        <div class="code-wrapper">
-            <div class="code-header">
-                <span style="font-weight:600; text-transform:uppercase;">${validLang}</span>
-                <button class="copy-code-btn" onclick="window.copyCodeBlock(this)">
-                    <span>📋</span> Copy
-                </button>
+            <div id="${uniqueId}" class="note-text-container" style="max-height: 120px; overflow: hidden; position: relative;">
+                <div class="note-text">${parsedText}</div>
+                <div class="fade-overlay"></div>
             </div>
-            <pre><code class="hljs language-${validLang}">${highlighted}</code></pre>
-        </div>`;
-    };
-
-    // নতুন ভার্সনের জন্য parse অপশন
-    const parsedText = marked.parse(text, { renderer });
-
-    // 🔥 Read More লজিক (FIXED)
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = parsedText;
-    const plainText = tempDiv.textContent || "";
-    
-    // যদি টেক্সট ২০০ ক্যারেক্টারের বেশি হয়
-    if (plainText.length > 200) {
-        const uniqueId = `note-content-${noteId || Math.random().toString(36).substr(2, 9)}`;
-        
-        return `
-        <div id="${uniqueId}" class="note-text" style="
-            overflow: hidden; 
-            max-height: 100px; 
-            position: relative;
-            transition: max-height 0.3s ease;
-            line-height: 1.5;
-        ">
-            ${parsedText}
-            <div class="fade-overlay" style="
-                position: absolute; 
-                bottom: 0; 
-                left: 0; 
-                width: 100%; 
-                height: 30px; 
-                background: linear-gradient(to bottom, transparent, white);
-                pointer-events: none;
-            "></div>
-        </div>
-        <button class="read-more-btn" onclick="
-            const content = document.getElementById('${uniqueId}');
-            const overlay = content.querySelector('.fade-overlay');
-            const btn = this;
-            if (content.style.maxHeight === 'none') {
-                content.style.maxHeight = '100px';
-                overlay.style.display = 'block';
-                btn.textContent = 'Read More...';
-            } else {
-                content.style.maxHeight = 'none';
-                overlay.style.display = 'none';
-                btn.textContent = 'Show Less';
-            }
-        " style="
-            color: #2563eb; 
-            border: none; 
-            background: none; 
-            padding: 5px 0; 
-            cursor: pointer; 
-            font-size: 13px; 
-            font-weight: bold; 
-            margin-top: 5px;
-            display: block;
-        ">Read More...</button>`;
+            <button class="read-more-btn" onclick="toggleReadMore('${uniqueId}', this)">Read More</button>
+        `;
     }
-    
     return `<div class="note-text">${parsedText}</div>`;
 }
+
+// গ্লোবাল ফাংশন হিসেবে যোগ করুন
+window.toggleReadMore = (id, btn) => {
+    const container = document.getElementById(id);
+    const overlay = container.querySelector('.fade-overlay');
+    if (container.style.maxHeight === 'none') {
+        container.style.maxHeight = '120px';
+        overlay.style.display = 'block';
+        btn.textContent = 'Read More';
+    } else {
+        container.style.maxHeight = 'none';
+        overlay.style.display = 'none';
+        btn.textContent = 'Show Less';
+    }
+};
