@@ -46,12 +46,15 @@
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid var(--border-color);
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .action-tools {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
+    flex: 1;
 }
 
 .tool-icon {
@@ -93,34 +96,73 @@
 }
 
 body.dark-mode .ai-compact-btn {
-    background: #1e293b;
-    border-color: #334155;
-    color: #60a5fa;
+    background: var(--bg-input);
+    border-color: var(--border-color);
+    color: var(--primary-color);
 }
 
 body.dark-mode .ai-compact-btn:hover {
-    background: #334155;
+    background: var(--bg-hover);
 }
 
-.ai-menu-popup {
+/* ডার্ক মোডে AI মেনু */
+body.dark-mode #ai-menu,
+body.dark-mode .ai-menu-popup {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .ai-option {
+    color: var(--text-main);
+    border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .ai-option:hover {
+    background: var(--bg-hover);
+}
+
+/* AI মেনু ডিফল্টভাবে লুকিয়ে থাকবে */
+#ai-menu {
     display: none;
     position: absolute;
-    top: 110%;
+    bottom: 40px;
     left: 0;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    width: 180px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
     z-index: 9999;
-    overflow: hidden;
+    min-width: 160px;
+    padding: 5px 0;
+}
+
+/* AI অপশন আইটেমগুলো */
+.ai-option {
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-main);
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.ai-option:hover {
+    background: var(--bg-hover);
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ফোল্ডার এবং সেভ বাটন */
 .save-section {
     display: flex;
+    gap: 8px;
     align-items: center;
-    gap: 10px;
+    width: 100%;
+    justify-content: flex-end;
 }
 
 .folder-minimal {
@@ -628,34 +670,12 @@ column-count: 1 !important;
 .drag-handle:active { cursor: grabbing; color: #1877f2; }
 
 /* Mobile Specific Fixes */
-@media (max-width: 768px) {
-    .search-and-view {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .search-wrapper {
-        width: 100%;
-    }
-    #selection-controls {
-        width: 100%;
+@media (max-width: 480px) {
+    .save-section {
         justify-content: space-between;
-        margin-left: 0;
-        margin-top: 10px;
     }
-    .view-toggles {
-        align-self: flex-end;
-    }
-    
-    /* 🔥 মোবাইলে AI ড্রপডাউন ফিক্স */
-    .rich-toolbar {
-        overflow: visible !important;
-        flex-wrap: wrap;
-    }
-    
-    #ai-menu {
-        left: auto;
-        right: 0;
-        width: 200px;
+    .folder-minimal {
+        flex: 1;
     }
 }
 

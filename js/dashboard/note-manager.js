@@ -306,42 +306,39 @@ export function setupNoteSaving(user) {
     handleSharedContent(); // ফাংশনটি কল করুন
 
     // 🔥 AI বাটন এবং টুলবার (আপডেটেড)
-    const toolbarHTML = `
-        <div class="rich-toolbar" style="display:flex; gap:10px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
-            
-            <!-- সাধারণ টুলস -->
-            <div style="display:flex; gap:5px;">
-                <button id="btn-bold" title="Bold" style="background:none; border:none; cursor:pointer; font-weight:bold; padding:5px;">B</button>
-                <button id="btn-italic" title="Italic" style="background:none; border:none; cursor:pointer; font-style:italic; padding:5px;">I</button>
-                <button id="btn-list" title="List" style="background:none; border:none; cursor:pointer; padding:5px;">📋</button>
-                <button id="btn-check" title="Checklist" style="background:none; border:none; cursor:pointer; padding:5px;">✅</button>
-                <button id="btn-mic" title="Record Audio" style="background:none; border:none; cursor:pointer; font-size:16px; padding:5px;">🎤</button>
-            </div>
-            
-            <div style="width:1px; height:20px; background:#ddd; margin:0 5px;"></div>
-            
-            <!-- AI ড্রপডাউন -->
-            <div class="ai-dropdown">
-                <button id="btn-ai" title="AI Magic">
-                    <span>🪄</span> AI Tools
-                </button>
-                
-                <div id="ai-menu">
-                    <div class="ai-option" data-task="grammar">✨ Fix Grammar</div>
-                    <div class="ai-option" data-task="summary">📝 Summarize</div>
-                    <div class="ai-option" data-task="tags">🏷️ Generate Tags</div>
+    // যদি আগে থেকে বার না থাকে তবেই অ্যাড করবে
+    if(!document.querySelector('.input-bottom-bar')) {
+        const toolbarHTML = `
+            <div class="input-bottom-bar">
+                <div class="action-tools">
+                    <span class="tool-icon" id="triggerFile" title="Add Image">📷</span>
+                    <span class="tool-icon" id="btn-mic" title="Record Audio">🎤</span>
+                    
+                    <div class="ai-dropdown-wrapper">
+                        <button id="btn-ai" class="ai-compact-btn">🪄 AI Tools</button>
+                        <div id="ai-menu" class="ai-menu-popup" style="display:none;">
+                            <div class="ai-option" data-task="grammar">✨ Fix Grammar</div>
+                            <div class="ai-option" data-task="summary">📝 Summarize</div>
+                            <div class="ai-option" data-task="tags">🏷️ Generate Tags</div>
+                        </div>
+                    </div>
+                    <span id="recording-status" class="status-dot">● Rec</span>
+                    <span id="ai-status" class="status-text" style="display:none;">Thinking...</span>
+                </div>
+
+                <div class="save-section">
+                    <select id="folderSelect" class="folder-minimal">
+                        <option value="General">📁 General</option>
+                    </select>
+                    <button id="saveBtn" class="btn-save-brain">Save to Brain</button>
                 </div>
             </div>
-            
-            <!-- স্ট্যাটাস মেসেজ -->
-            <span id="recording-status" style="font-size:12px; color:red; display:none;">Recording...</span>
-            <span id="ai-status" style="font-size:12px; color:#6366f1; display:none; font-weight:500; margin-left:5px;">Thinking...</span>
-        </div>
-    `;
+        `;
 
-    const inputArea = document.querySelector('.input-area');
-    if(inputArea && !document.querySelector('.rich-toolbar')) {
-        inputArea.insertBefore(new DOMParser().parseFromString(toolbarHTML, 'text/html').body.firstChild, noteInput);
+        const inputArea = document.querySelector('.input-area');
+        if(inputArea) {
+            inputArea.insertAdjacentHTML('beforeend', toolbarHTML);
+        }
     }
 
     const insertText = (before, after) => {
@@ -364,17 +361,23 @@ export function setupNoteSaving(user) {
     const aiStatus = document.getElementById('ai-status');
 
     if(aiBtn && aiMenu) {
-        // Toggle Menu
-        aiBtn.addEventListener('click', (e) => {
+        // পুরনো ইভেন্ট রিমুভ করে নতুন করে সেট করা
+        aiBtn.onclick = (e) => {
+            e.preventDefault();
             e.stopPropagation();
-            aiMenu.style.display = aiMenu.style.display === 'block' ? 'none' : 'block';
-        });
+            
+            console.log("AI Button Clicked!");
+            
+            const isHidden = aiMenu.style.display === 'none' || aiMenu.style.display === '';
+            aiMenu.style.display = isHidden ? 'block' : 'none';
+        };
 
-        // Close menu when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!aiBtn.contains(e.target) && !aiMenu.contains(e.target)) {
-                aiMenu.style.display = 'none';
-            }
+        // মেনুর ভেতরে ক্লিক করলে যাতে বন্ধ না হয়
+        aiMenu.onclick = (e) => e.stopPropagation();
+
+        // বাইরে ক্লিক করলে বন্ধ হবে
+        document.addEventListener('click', () => {
+            aiMenu.style.display = 'none';
         });
 
         // Handle AI Options
