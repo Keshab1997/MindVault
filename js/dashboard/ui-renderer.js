@@ -26,6 +26,15 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
     card.setAttribute('data-id', id);
     if(data.color) card.style.backgroundColor = data.color;
 
+    // যদি আইডি "temp_" দিয়ে শুরু হয়, তবে একটি লোডার আইকন দিন
+    if (id.startsWith('temp_')) {
+        const syncIcon = document.createElement('div');
+        syncIcon.style.cssText = "position:absolute; top:10px; right:10px; font-size:12px; opacity:0.5; background:rgba(255,255,255,0.9); padding:2px 6px; border-radius:10px;";
+        syncIcon.innerHTML = "⏳ Syncing...";
+        card.appendChild(syncIcon);
+        card.style.opacity = "0.7";
+    }
+
     // সিলেকশন চেকবক্স
     const selectCheckbox = document.createElement('input');
     selectCheckbox.type = 'checkbox';
@@ -183,17 +192,22 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
     
     // তারিখ ফরম্যাট করার জন্য একটি সেফ ফাংশন
     const formatNoteDate = (ts) => {
-        if (!ts) return "";
-        // যদি এটি ফায়ারবেস টাইমস্ট্যাম্প হয় (যাতে .toDate ফাংশন আছে)
+        if (!ts) return "Just now";
+        
+        let date;
         if (typeof ts.toDate === 'function') {
-            return ts.toDate().toLocaleDateString();
+            date = ts.toDate();
+        } else if (ts.seconds) {
+            date = new Date(ts.seconds * 1000);
+        } else {
+            date = new Date(ts);
         }
-        // যদি এটি লোকাল স্টোরেজ থেকে আসা অবজেক্ট হয় (যাতে শুধু seconds আছে)
-        if (ts.seconds) {
-            return new Date(ts.seconds * 1000).toLocaleDateString();
+        
+        const now = new Date();
+        if (date.toDateString() === now.toDateString()) {
+            return "Today, " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
-        // অন্যথায় সাধারণ ডেট হিসেবে রিটার্ন করবে
-        return new Date(ts).toLocaleDateString();
+        return date.toLocaleDateString();
     };
 
     const leftFooter = document.createElement('div');

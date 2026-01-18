@@ -79,16 +79,30 @@ export async function loadNotes(uid, filterType = 'All', filterValue = null) {
     if (unsubscribePinned) unsubscribePinned(); // আগের পিন লিসেনার বন্ধ করুন
 
     unsubscribeNotes = onSnapshot(q, async (snapshot) => {
-        const notes = [];
-        snapshot.forEach(doc => notes.push({ id: doc.id, ...doc.data() }));
+        let serverNotes = [];
+        snapshot.forEach(doc => serverNotes.push({ id: doc.id, ...doc.data() }));
 
-        // ৩. শুধুমাত্র 'All' ফিল্টারে থাকলে লোকাল ডিবি আপডেট করুন
+        // 🔥 অফলাইন কিউ থেকে পেন্ডিং নোটগুলো নিন
+        const syncQueue = await localDB.getSyncQueue();
+        const pendingNotes = syncQueue
+            .filter(item => item.type === 'ADD')
+            .map(item => item.data);
+
+        // সার্ভার এবং পেন্ডিং নোট একসাথে মিশিয়ে ফেলুন
+        let allNotes = [...pendingNotes, ...serverNotes.filter(sn => !pendingNotes.some(pn => pn.id === sn.id))];
+
+        // 🔥 টাইমস্ট্যাম্প অনুযায়ী সর্ট করুন (Newest First)
+        allNotes.sort((a, b) => {
+            const timeA = a.timestamp?.seconds || (typeof a.timestamp === 'number' ? a.timestamp : 0);
+            const timeB = b.timestamp?.seconds || (typeof b.timestamp === 'number' ? b.timestamp : 0);
+            return timeB - timeA;
+        });
+
         if (filterType === 'All' || filterType === 'all') {
-            await localDB.saveNotes(notes);
+            await localDB.saveNotes(serverNotes);
         }
 
-        // ৪. UI আপডেট করুন
-        renderNotesToUI(notes, contentGrid, filterType, uid);
+        renderNotesToUI(allNotes, contentGrid, filterType, uid);
         
         const searchInput = document.getElementById('searchInput');
         if(searchInput && searchInput.value) searchInput.dispatchEvent(new Event('input'));
@@ -550,35 +564,34 @@ export async function setupNoteSaving(user) {
         const rawText = noteInput.value.trim();
         const files = Array.from(fileInput.files);
         const targetFolder = document.getElementById('folderSelect')?.value || "General";
-        const tempId = "temp_" + Date.now(); // অফলাইন আইডি
+        const tempId = "temp_" + Date.now();
 
         if (!rawText && files.length === 0 && !androidSharedImage && !audioBlob) return showToast("⚠️ Empty note!", "error");
 
+        const normalizedText = Utils.normalizeUrl(rawText);
+        const isUrl = Utils.isValidURL(normalizedText);
+
         const newNote = {
             id: tempId,
-            text: rawText,
+            text: normalizedText,
+            type: isUrl ? 'link' : 'text',
             status: 'active',
             timestamp: { seconds: Math.floor(Date.now()/1000) },
             uid: user.uid,
             folder: targetFolder,
             tags: [],
-            isPinned: false,
-            type: 'text'
+            isPinned: false
         };
 
-        // ১. ইনস্ট্যান্ট লোকাল সেভ (UI-তে সাথে সাথে দেখাবে)
-        const existingNotes = await localDB.getAllNotes();
-        await localDB.saveNotes([newNote, ...existingNotes]);
-        renderNotesToUI(await localDB.getAllNotes(), document.getElementById('content-grid'), 'All', user.uid);
-        
-        // ২. সিঙ্ক কিউতে যোগ করা
         await localDB.addToSyncQueue({ type: 'ADD', data: newNote });
+        
+        // UI রিফ্রেশ করতে লোডনোটস কল করা
+        loadNotes(user.uid, 'All');
         
         noteInput.value = "";
         clearFileInput();
         showToast("✅ Note saved locally!");
 
-        // ৩. ব্যাকগ্রাউন্ড সিঙ্ক ট্রিগার করা
         attemptSync();
     });
 }
