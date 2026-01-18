@@ -590,6 +590,10 @@ width: 100%;
 margin: 0 auto;
 scroll-behavior: smooth;
 -webkit-overflow-scrolling: touch;
+
+/* 🔥 ব্রাউজারকে লেআউট ক্যালকুলেশনে সাহায্য করবে */
+contain: layout style;
+display: block;
 }
 
 /* আইফ্রেম লোড হওয়ার সময় কালো ব্যাকগ্রাউন্ড যাতে চোখে না লাগে */
@@ -614,7 +618,7 @@ border-radius: 12px;
 padding: 15px;
 box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 border: 1px solid rgba(0,0,0,0.03);
-transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
+transition: transform 0.15s ease-out;
 position: relative;
 overflow: hidden;
 display: inline-block;
@@ -623,10 +627,12 @@ margin-bottom: 20px;
 break-inside: avoid;
 vertical-align: top;
 
-/* ব্রাউজার অপটিমাইজেশন */
+/* 🔥 ব্রাউজার অপটিমাইজেশন */
 will-change: transform, opacity;
 content-visibility: auto;
-contain-intrinsic-size: 1px 300px;
+contain-intrinsic-size: 10px 300px;
+backface-visibility: hidden;
+transform: translateZ(0); /* GPU Acceleration */
 }
 
 .note-card:hover {
@@ -1005,4 +1011,22 @@ body.dark-mode .note-text-container::-webkit-scrollbar-thumb {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+/* 🔥 শুধু মেইন ইমেজের জন্য এই স্টাইলটি থাকবে */
+.note-card .main-note-img {
+    aspect-ratio: auto;
+    background: var(--bg-hover);
+    min-height: 100px; /* এটি শুধু বড় ইমেজের জন্য */
+    width: 100%;
+    border-radius: 8px;
+    display: block;
+    margin-bottom: 5px;
+    object-fit: cover;
+}
+
+/* হোয়াটসঅ্যাপ বা অন্য ছোট আইকন যাতে বড় না হয় */
+.note-card .wa-icon {
+    min-height: unset !important;
+    background: transparent !important;
+    display: inline-block !important;
 }

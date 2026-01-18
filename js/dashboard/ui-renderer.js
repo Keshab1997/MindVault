@@ -116,7 +116,7 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
         contentHTML += `<div style="margin-bottom:10px;"><audio controls style="width:100%; height:35px;"><source src="${data.fileUrl}" type="audio/mpeg"></audio></div>`;
         if(data.text) contentHTML += generateTextHTML(data.text, id);
     } else if (data.type === 'image' && (data.fileUrl || data.image)) {
-        contentHTML += `<img src="${data.fileUrl || data.image}" loading="eager" style="width:100%; min-height:200px; background:#f1f5f9; border-radius: 8px; display:block; margin-bottom:5px;">`;
+        contentHTML += `<img class="main-note-img" src="${data.fileUrl || data.image}" loading="eager">`;
         if(data.text) contentHTML += generateTextHTML(data.text, id);
     } else if (mediaEmbed) {
         contentHTML += `<div class="embed-container" style="min-height:300px; background:#000; border-radius:8px; overflow:hidden;">${mediaEmbed}</div>`;
@@ -142,7 +142,14 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
             }
         });
         
-        linkCard.innerHTML = `${data.image ? `<div style="height:140px; background-image: url('${data.image}'); background-size: cover; background-position: center;"></div>` : ''}<div style="padding:10px;"><h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">${data.title || data.text}</h4><div style="font-size:11px; color:#666;">🔗 ${data.domain || 'Link'}</div></div>`;
+        linkCard.innerHTML = `
+            ${data.image ? `<div style="height:160px; background:url('${data.image}') center/cover no-repeat;"></div>` : ''}
+            <div style="padding:12px;">
+                <h4 style="margin:0 0 8px 0; font-size:15px; color:var(--text-main); line-height:1.4;">${data.title || data.text}</h4>
+                ${data.description ? `<p style="margin:0 0 10px 0; font-size:13px; color:var(--text-muted); line-height:1.5; display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical; overflow:hidden;">${data.description}</p>` : ''}
+                <div style="font-size:11px; color:var(--primary-color); font-weight:600;">🔗 ${data.domain || 'Open Link'}</div>
+            </div>
+        `;
         
         contentHTML += linkCard.outerHTML;
     } else {
@@ -222,7 +229,7 @@ export function createNoteCardElement(docSnap, isTrashView, callbacks) {
     // 🔥 WhatsApp Direct Share Button (Fixed for Photos)
     if (!isTrashView) {
         const waBtn = document.createElement('button');
-        waBtn.innerHTML = ' <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="18" height="18" style="opacity:0.7;">';
+        waBtn.innerHTML = ' <img class="wa-icon" src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="18" height="18" style="opacity:0.7;">';
         waBtn.style.cssText = "background:none; border:none; cursor:pointer; display:flex; align-items:center;";
         waBtn.title = "Share to WhatsApp";
         

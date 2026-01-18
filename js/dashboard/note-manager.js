@@ -40,7 +40,13 @@ export async function loadNotes(uid, filterType = 'All', filterValue = null) {
 
     // ১. প্রথমে লোকাল ডেটাবেস থেকে ডেটা লোড করুন (ইন্সট্যান্ট লোডিং)
     const cachedNotes = await localDB.getAllNotes();
-    if (cachedNotes.length > 0 && filterType === 'All') {
+    if (cachedNotes.length > 0 && (filterType === 'All' || filterType === 'all')) {
+        // 🔥 ক্যাশ ডাটা সর্ট করা
+        cachedNotes.sort((a, b) => {
+            const timeA = a.timestamp?.seconds || a.timestamp || 0;
+            const timeB = b.timestamp?.seconds || b.timestamp || 0;
+            return timeB - timeA;
+        });
         renderNotesToUI(cachedNotes, contentGrid, filterType, uid);
     }
 
@@ -113,8 +119,12 @@ export async function loadNotes(uid, filterType = 'All', filterValue = null) {
 
 // রেন্ডারিং লজিক আলাদা ফাংশনে নিয়ে আসা (কোড ক্লিন রাখার জন্য)
 function renderNotesToUI(notes, container, filterType, uid) {
-    // ১. গ্রিড ক্লিয়ার করুন যাতে নতুন করে ওপর থেকে সাজানো যায়
-    container.innerHTML = "";
+    // 🔥 যদি ডাটা একই থাকে তবে রেন্ডার করার দরকার নেই (Optional optimization)
+    const noteIds = JSON.stringify(notes.map(n => n.id));
+    if (container.getAttribute('data-last-sync') === noteIds) return;
+
+    // 🔥 DocumentFragment ব্যবহার করে পারফরম্যান্স বাড়ানো
+    const fragment = document.createDocumentFragment();
     selectedNoteIds.clear();
     updateSelectionUI();
 
@@ -128,7 +138,7 @@ function renderNotesToUI(notes, container, filterType, uid) {
             <span style="color:#d32f2f; font-weight:bold;">🗑️ Trash (${count} items)</span>
             ${count > 0 ? `<button id="emptyTrashBtn" style="background:#d32f2f; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px;">Empty Trash</button>` : ''}
         `;
-        container.appendChild(trashHeader);
+        fragment.appendChild(trashHeader);
 
         setTimeout(() => {
             const emptyBtn = document.getElementById('emptyTrashBtn');
@@ -145,32 +155,38 @@ function renderNotesToUI(notes, container, filterType, uid) {
         const p = document.createElement('p');
         p.style.cssText = "text-align:center; color:#999; margin-top:20px; width:100%; grid-column: 1 / -1;";
         p.innerText = msg;
-        container.appendChild(p);
-        return;
+        fragment.appendChild(p);
+    } else {
+        // ৩. নোটগুলো লুপ চালিয়ে fragment-এ যোগ করুন
+        notes.forEach((noteData) => {
+            if (filterType !== 'trash' && noteData.isPinned) return;
+            
+            const mockDocSnap = {
+                id: noteData.id,
+                data: () => noteData
+            };
+
+            const card = UI.createNoteCardElement(mockDocSnap, filterType === 'trash', {
+                onRestore: DBService.restoreNoteDB,
+                onDeleteForever: (id) => confirm("Permanently delete?") && DBService.deleteNoteForeverDB(id),
+                onContextMenu: openContextMenu,
+                onRead: openReadModal,
+                onSelect: (id, isSelected) => {
+                    if(isSelected) selectedNoteIds.add(id);
+                    else selectedNoteIds.delete(id);
+                    updateSelectionUI();
+                }
+            });
+            
+            fragment.appendChild(card);
+        });
     }
 
-    // ৩. নোটগুলো লুপ চালিয়ে অ্যাপেন্ড করুন
-    notes.forEach((noteData) => {
-        if (filterType !== 'trash' && noteData.isPinned) return;
-        
-        const mockDocSnap = {
-            id: noteData.id,
-            data: () => noteData
-        };
-
-        const card = UI.createNoteCardElement(mockDocSnap, filterType === 'trash', {
-            onRestore: DBService.restoreNoteDB,
-            onDeleteForever: (id) => confirm("Permanently delete?") && DBService.deleteNoteForeverDB(id),
-            onContextMenu: openContextMenu,
-            onRead: openReadModal,
-            onSelect: (id, isSelected) => {
-                if(isSelected) selectedNoteIds.add(id);
-                else selectedNoteIds.delete(id);
-                updateSelectionUI();
-            }
-        });
-        
-        container.appendChild(card);
+    // 🔥 একবারে DOM আপডেট করুন (এটি ল্যাগ কমাবে)
+    requestAnimationFrame(() => {
+        container.innerHTML = "";
+        container.appendChild(fragment);
+        container.setAttribute('data-last-sync', noteIds);
     });
 }
 
@@ -554,10 +570,24 @@ export async function setupNoteSaving(user) {
         const normalizedText = Utils.normalizeUrl(rawText);
         const isUrl = Utils.isValidURL(normalizedText);
 
+        // 🔥 অনলাইনে থাকলে সাথে সাথে মেটাডাটা নেওয়ার চেষ্টা করো
+        let linkMeta = {};
+        if (isUrl && navigator.onLine) {
+            try {
+                updateSyncStatus("Fetching link info...", true);
+                linkMeta = await Utils.getLinkPreviewData(normalizedText);
+                updateSyncStatus(null);
+            } catch (e) { 
+                console.log("Quick fetch failed", e);
+                updateSyncStatus(null);
+            }
+        }
+
         const newNote = {
             id: tempId,
             text: normalizedText,
             type: isUrl ? 'link' : 'text',
+            ...linkMeta, // মেটাডাটা থাকলে এখানে ঢুকে যাবে
             status: 'active',
             timestamp: { seconds: Math.floor(Date.now()/1000) },
             uid: user.uid,
@@ -689,7 +719,20 @@ export async function attemptSync() {
     for (const item of queue) {
         try {
             if (item.type === 'ADD') {
-                const { id, ...firebaseData } = item.data;
+                let noteData = item.data;
+
+                // 🔥 যদি লিঙ্ক হয় এবং ডেসক্রিপশন না থাকে, তবে ফেচ করো
+                if (noteData.type === 'link' && !noteData.description) {
+                    updateSyncStatus("Enriching link data...", true);
+                    try {
+                        const meta = await Utils.getLinkPreviewData(noteData.text);
+                        noteData = { ...noteData, ...meta }; // মেটাডাটা মিশিয়ে দাও
+                    } catch (e) {
+                        console.log("Link metadata fetch failed:", e);
+                    }
+                }
+
+                const { id, ...firebaseData } = noteData;
                 await DBService.addNoteToDB(firebaseData.uid, firebaseData);
             } else if (item.type === 'DELETE') {
                 await DBService.moveToTrashDB(item.noteId);
